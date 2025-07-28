@@ -1,19 +1,31 @@
 const mongoose = require('mongoose');
 
 const userSchema = new mongoose.Schema({
-  fullName: { type: String, required: true },
+  fullName: {
+    type: String,
+    required: [true, 'Full name is required'],
+    trim: true,
+  },
 
   email: {
     type: String,
-    required: true,
+    required: [true, 'Email is required'],
     unique: true,
     lowercase: true,
     trim: true,
   },
 
-  password: { type: String, required: true },
+  password: {
+    type: String,
+    required: [true, 'Password is required'],
+    minlength: 8,
+  },
 
-  phone: { type: String, default: '' }, // ✅ NEW: Phone support
+  phone: {
+    type: String,
+    default: '',
+    trim: true,
+  },
 
   role: {
     type: String,
@@ -21,12 +33,18 @@ const userSchema = new mongoose.Schema({
     default: 'user',
   },
 
-  photo: { type: String, default: '' },
+  photo: {
+    type: String,
+    default: '',
+  },
 
-  // ✅ NEW: For 6-digit code-based reset
-  resetCode: { type: String },             // 6-digit code
-  resetCodeExpiry: { type: Date },         // Expires in 15 mins
+  resetCode: {
+    type: String, // For 6-digit code
+  },
 
-}, { timestamps: true });
-
-module.exports = mongoose.model('User', userSchema);
+  resetCodeExpiry: {
+    type: Date, // Expires in 15 minutes
+  },
+}, {
+  timestamps: true,
+});
