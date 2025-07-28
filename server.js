@@ -26,7 +26,7 @@ connectDB();
 
 // ✅ Route imports
 const productRoutes = require('./routes/productRoutes');
-const cartRoutes = require('./routes/cartRoutes');
+const cartRoutes = require('./routes/cart');
 // Add more as needed: const userRoutes = require('./routes/userRoutes');
 
 // ✅ Use routes
