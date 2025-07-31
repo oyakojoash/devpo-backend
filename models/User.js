@@ -48,3 +48,6 @@ const userSchema = new mongoose.Schema({
 }, {
   timestamps: true,
 });
+
+// ✅ Export the model
+module.exports = mongoose.model('User', userSchema);
