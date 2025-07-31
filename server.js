@@ -47,7 +47,7 @@ connectDB();
 // ✅ Route imports
 const productRoutes = require('./routes/productRoutes');
 const cartRoutes = require('./routes/cart');
-const authRoutes = require('./routes/authRoutes');
+const authRoutes = require('./routes/auth');
 
 // ✅ Mount routes
 app.use('/api/products', productRoutes);
