@@ -9,20 +9,19 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-// ✅ CORS middleware supporting both dev and prod
+// ✅ Allow frontend on Render + local dev
 const allowedOrigins = [
   'http://localhost:3000',
-  'https://devpo-frontend.onrender.com'
+  'https://devpo1-frontend.onrender.com', // ✅ corrected
 ];
 
 app.use(cors({
   origin: function (origin, callback) {
-    // allow requests with no origin like mobile apps or curl
     if (!origin) return callback(null, true);
     if (allowedOrigins.includes(origin)) {
       return callback(null, true);
     } else {
-      return callback(new Error('Not allowed by CORS'));
+      return callback(new Error('❌ Not allowed by CORS'));
     }
   },
   credentials: true,
@@ -48,27 +47,27 @@ connectDB();
 // ✅ Route imports
 const productRoutes = require('./routes/productRoutes');
 const cartRoutes = require('./routes/cart');
-// const userRoutes = require('./routes/userRoutes'); // Uncomment when ready
+const authRoutes = require('./routes/authRoutes');
 
-// ✅ Routes
+// ✅ Mount routes
 app.use('/api/products', productRoutes);
 app.use('/api/cart', cartRoutes);
-// app.use('/api/users', userRoutes); // Uncomment when implemented
+app.use('/api/auth', authRoutes);
 
 // ✅ Default route
 app.get('/', (req, res) => {
   res.send('API is running...');
 });
 
-// ✅ 404 Fallback
+// ✅ 404 handler
 app.use((req, res, next) => {
-  res.status(404).json({ error: 'Route not found' });
+  res.status(404).json({ error: '❌ Route not found' });
 });
 
 // ✅ Global error handler
 app.use((err, req, res, next) => {
-  console.error('❌ Server Error:', err.message || err);
-  res.status(500).json({ error: 'Server error' });
+  console.error('❌ Server error:', err.message || err);
+  res.status(500).json({ error: 'Internal server error' });
 });
 
 // ✅ Start server
