@@ -9,18 +9,15 @@ const app = express();
 const PORT = process.env.PORT || 10000;
 
 const allowedOrigins = [
-  'http://localhost:3000',
-  'https://devpo1-frontend.onrender.com',
+  'https://devpo1-frontend.onrender.com', // ✅ your frontend
+  'http://localhost:3000',                // ✅ local dev (optional)
 ];
 
 app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) return callback(null, true);
-    return callback(new Error('❌ Not allowed by CORS'));
-  },
-  credentials: true,
+  origin: allowedOrigins,
+  credentials: true, // ✅ allow cookies
 }));
+
 
 app.use(express.json());
 app.use(cookieParser());
