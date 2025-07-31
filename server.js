@@ -5,33 +5,27 @@ const cookieParser = require('cookie-parser');
 const cors = require('cors');
 
 dotenv.config();
-
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-// ✅ Allow frontend on Render + local dev
 const allowedOrigins = [
   'http://localhost:3000',
-  'https://devpo1-frontend.onrender.com', // ✅ corrected
+  'https://devpo1-frontend.onrender.com',
 ];
 
 app.use(cors({
   origin: function (origin, callback) {
     if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    } else {
-      return callback(new Error('❌ Not allowed by CORS'));
-    }
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    return callback(new Error('❌ Not allowed by CORS'));
   },
   credentials: true,
 }));
 
-// ✅ Middleware
 app.use(express.json());
 app.use(cookieParser());
 
-// ✅ MongoDB Connection
+// Connect DB
 const connectDB = async () => {
   try {
     await mongoose.connect(process.env.MONGO_URI);
@@ -41,36 +35,32 @@ const connectDB = async () => {
     process.exit(1);
   }
 };
-
 connectDB();
 
-// ✅ Route imports
+// Routes
 const productRoutes = require('./routes/productRoutes');
 const cartRoutes = require('./routes/cart');
-const authRoutes = require('./routes/auth');
+const authRoutes = require('./routes/auth'); // handles login, register, /auth/me
+const userRoutes = require('./routes/user'); // handles PUT /auth/me and /auth/password
 
-// ✅ Mount routes
 app.use('/api/products', productRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/auth', userRoutes); // ✅ Mount extra user actions here
 
-// ✅ Default route
 app.get('/', (req, res) => {
   res.send('API is running...');
 });
 
-// ✅ 404 handler
 app.use((req, res, next) => {
   res.status(404).json({ error: '❌ Route not found' });
 });
 
-// ✅ Global error handler
 app.use((err, req, res, next) => {
   console.error('❌ Server error:', err.message || err);
   res.status(500).json({ error: 'Internal server error' });
 });
 
-// ✅ Start server
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
