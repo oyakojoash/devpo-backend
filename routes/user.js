@@ -1,5 +1,5 @@
 const express = require('express');
-const { protect } = require('../middleware/authMiddleware'); // Use improved middleware
+const { protect } = require('../middleware/auth'); // Use improved middleware
 const userCtrl = require('../controllers/userController');
 const router = express.Router();
 
