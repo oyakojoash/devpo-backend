@@ -1,10 +1,15 @@
 const express = require('express');
-const verifyToken = require('../middleware/verifyToken');
+const { protect } = require('../middleware/authMiddleware'); // Use improved middleware
 const userCtrl = require('../controllers/userController');
 const router = express.Router();
 
-router.get('/me', verifyToken, userCtrl.getUser);
-router.put('/me', verifyToken, userCtrl.updateProfile);
-router.put('/password', verifyToken, userCtrl.updatePassword);
+// GET /api/auth/me - Get logged-in user's info
+router.get('/me', protect, userCtrl.getUser);
+
+// PUT /api/auth/me - Update user's profile info
+router.put('/me', protect, userCtrl.updateProfile);
+
+// PUT /api/auth/password - Update user's password
+router.put('/password', protect, userCtrl.updatePassword);
 
 module.exports = router;
