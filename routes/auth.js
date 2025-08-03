@@ -41,12 +41,16 @@ router.post('/login', async (req, res) => {
       expiresIn: '1d',
     });
 
+   console.log("login attempt from:",req.headers.origin)
+
     res.cookie('token', token, {
   httpOnly: true,
   secure: true, // ✅ force secure
   sameSite: 'None', // ✅ allow cross-origin cookie
   maxAge: 24 * 60 * 60 * 1000,
 });
+
+console.log("set-cookie header")
 
     res.json({ message: '✅ Login successful' });
   } catch (err) {
