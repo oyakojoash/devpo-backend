@@ -22,7 +22,7 @@ app.use(cors({
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      callback(new Error('Not allowed by CORS'));
+      callback(new Error('❌ Not allowed by CORS'));
     }
   },
   credentials: true,
@@ -32,15 +32,14 @@ app.use(cors({
 app.use(helmet());
 app.use(morgan('dev'));
 
-// ✅ Middleware
+// ✅ Core middleware
 app.use(express.json());
 app.use(cookieParser());
 
 // ✅ Connect DB
-// ✅ Connect DB
 const connectDB = async () => {
   try {
-    await mongoose.connect(process.env.MONGO_URI); // ✅ no extra options needed in Mongoose v6+
+    await mongoose.connect(process.env.MONGO_URI); // Mongoose v6+ no extra options needed
     console.log('✅ MongoDB connected');
   } catch (error) {
     console.error('❌ MongoDB connection failed:', error.message);
@@ -48,7 +47,6 @@ const connectDB = async () => {
   }
 };
 connectDB();
-
 
 // ✅ Routes
 const productRoutes = require('./routes/productRoutes');
@@ -59,9 +57,9 @@ const userRoutes = require('./routes/user');  // user profile, password update
 app.use('/api/products', productRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/auth', authRoutes);
-app.use('/api/users', userRoutes); // separated from auth for clarity
+app.use('/api/users', userRoutes); // clearer separation
 
-// ✅ Root
+// ✅ Root test route
 app.get('/', (req, res) => {
   res.send('API is running...');
 });
@@ -73,7 +71,7 @@ app.use((req, res, next) => {
 
 // ✅ Error handler
 app.use((err, req, res, next) => {
-  console.error('❌ Server error:', err.stack || err);
+  console.error('❌ Server error:', err.stack || err.message || err);
   res.status(err.status || 500).json({ error: err.message || 'Internal server error' });
 });
 
