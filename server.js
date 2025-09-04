@@ -37,12 +37,10 @@ app.use(express.json());
 app.use(cookieParser());
 
 // ✅ Connect DB
+// ✅ Connect DB
 const connectDB = async () => {
   try {
-    await mongoose.connect(process.env.MONGO_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
+    await mongoose.connect(process.env.MONGO_URI); // ✅ no extra options needed in Mongoose v6+
     console.log('✅ MongoDB connected');
   } catch (error) {
     console.error('❌ MongoDB connection failed:', error.message);
@@ -50,6 +48,7 @@ const connectDB = async () => {
   }
 };
 connectDB();
+
 
 // ✅ Routes
 const productRoutes = require('./routes/productRoutes');
