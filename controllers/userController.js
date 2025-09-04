@@ -3,6 +3,9 @@ const bcrypt = require('bcrypt');
 
 // ✅ Get logged-in user
 exports.getUser = async (req, res) => {
+
+  console.log("👤 GET /auth/profile");
+  console.log("🙋‍♂️ Authenticated user:", req.user);
   try {
     const user = await User.findById(req.user.id).select('-password');
     if (!user) return res.status(404).json({ message: 'User not found' });

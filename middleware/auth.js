@@ -4,6 +4,7 @@ const User = require('../models/User');
 // ✅ Middleware: Protect routes using JWT in cookies
 const protect = async (req, res, next) => {
   const token = req.cookies?.token;
+  console.log("🍪 Token from cookie:", token);
 
   if (!token) {
     return res.status(401).json({ message: '❌ Not authorized: no token' });
@@ -11,8 +12,10 @@ const protect = async (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    console.log("🔓 Decoded token:", decoded);
 
     const user = await User.findById(decoded.id).select('-password');
+    console.log("✅ Loaded user from DB:", user);
     if (!user) {
       return res.status(401).json({ message: '❌ User not found' });
     }

@@ -33,7 +33,7 @@ exports.register = async (req, res) => {
     // Send token as HTTP-only cookie
     res.cookie('token', token, {
       httpOnly: true,
-      secure: true, // Set to true in production with HTTPS
+      secure: false, // Set to true in production with HTTPS
       sameSite: 'None', // Needed for cross-origin cookies on platforms like Render
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });

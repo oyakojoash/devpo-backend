@@ -1,3 +1,4 @@
+// backend/routes/cart.js
 const express = require('express');
 const Cart = require('../models/Cart');
 const { protect } = require('../middleware/auth'); // Cookie-based auth
@@ -8,7 +9,7 @@ const router = express.Router();
 router.get('/', protect, async (req, res) => {
   try {
     const cart = await Cart.findOne({ user: req.user._id }).populate('items.productId');
-    res.json(cart || { items: [] }); // fallback to empty cart
+    res.json({ items: cart?.items || [] }); // ✅ always return { items }
   } catch (err) {
     console.error('[GET /api/cart] ❌', err.message);
     res.status(500).json({ message: 'Failed to load cart' });
@@ -44,7 +45,7 @@ router.post('/', protect, async (req, res) => {
     await cart.save();
 
     const updatedCart = await Cart.findOne({ user: req.user._id }).populate('items.productId');
-    res.json(updatedCart);
+    res.json({ items: updatedCart.items }); // ✅ only return items
   } catch (err) {
     console.error('[POST /api/cart] ❌', err.message);
     res.status(500).json({ message: 'Failed to update cart' });
@@ -67,7 +68,7 @@ router.delete('/:productId', protect, async (req, res) => {
     await cart.save();
 
     const updatedCart = await Cart.findOne({ user: req.user._id }).populate('items.productId');
-    res.json(updatedCart);
+    res.json({ items: updatedCart.items }); // ✅ only return items
   } catch (err) {
     console.error('[DELETE /api/cart/:productId] ❌', err.message);
     res.status(500).json({ message: 'Failed to remove item from cart' });

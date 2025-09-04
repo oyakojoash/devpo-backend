@@ -4,7 +4,7 @@ const userCtrl = require('../controllers/userController');
 const router = express.Router();
 
 // GET /api/auth/me - Get logged-in user's info
-router.get('/profile', protect, userCtrl.getUser);     // now non-conflicting
+router.get('/me', protect, userCtrl.getUser);     // now non-conflicting
 router.put('/me', protect, userCtrl.updateProfile);
 router.put('/password', protect, userCtrl.updatePassword);
 

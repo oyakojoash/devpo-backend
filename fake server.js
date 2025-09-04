@@ -3,46 +3,37 @@ const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const cookieParser = require('cookie-parser');
 const cors = require('cors');
-const helmet = require('helmet');
-const morgan = require('morgan');
 
 dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-// ✅ Allowed origins
 const allowedOrigins = [
-  'https://devpo1-frontend.onrender.com', // deployed frontend
-  'http://localhost:3000',                // local dev
+  'https://devpo1-frontend.onrender.com', // ✅ your frontend
+  'http://localhost:3000',                // ✅ local dev (optional)
 ];
 
-// ✅ CORS middleware
+
+
 app.use(cors({
-  origin: (origin, callback) => {
+  origin: function (origin, callback) {
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      callback(new Error('Not allowed by CORS'));
+      callback(new Error('❌ Not allowed by CORS'));
     }
   },
   credentials: true,
 }));
 
-// ✅ Security & logging
-app.use(helmet());
-app.use(morgan('dev'));
 
-// ✅ Middleware
 app.use(express.json());
 app.use(cookieParser());
 
-// ✅ Connect DB
+// Connect DB
 const connectDB = async () => {
   try {
-    await mongoose.connect(process.env.MONGO_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
+    await mongoose.connect(process.env.MONGO_URI);
     console.log('✅ MongoDB connected');
   } catch (error) {
     console.error('❌ MongoDB connection failed:', error.message);
@@ -51,41 +42,30 @@ const connectDB = async () => {
 };
 connectDB();
 
-// ✅ Routes
+// Routes
 const productRoutes = require('./routes/productRoutes');
 const cartRoutes = require('./routes/cart');
-const authRoutes = require('./routes/auth');  // login, register, /auth/me
-const userRoutes = require('./routes/user');  // user profile, password update
+const authRoutes = require('./routes/auth'); // handles login, register, /auth/me
+const userRoutes = require('./routes/user'); // handles PUT /auth/me and /auth/password
 
 app.use('/api/products', productRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/auth', authRoutes);
-app.use('/api/users', userRoutes); // separated from auth for clarity
+app.use('/api/auth', userRoutes); // ✅ Mount extra user actions here
 
-// ✅ Root
 app.get('/', (req, res) => {
   res.send('API is running...');
 });
 
-// ✅ 404 handler
 app.use((req, res, next) => {
   res.status(404).json({ error: '❌ Route not found' });
 });
 
-// ✅ Error handler
 app.use((err, req, res, next) => {
-  console.error('❌ Server error:', err.stack || err);
-  res.status(err.status || 500).json({ error: err.message || 'Internal server error' });
+  console.error('❌ Server error:', err.message || err);
+  res.status(500).json({ error: 'Internal server error' });
 });
 
-// ✅ Graceful shutdown
-process.on('SIGINT', async () => {
-  await mongoose.connection.close();
-  console.log('🛑 MongoDB connection closed');
-  process.exit(0);
-});
-
-// ✅ Start server
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });

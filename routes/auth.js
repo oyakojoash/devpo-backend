@@ -6,7 +6,7 @@ const { protect } = require('../middleware/auth');
 
 const router = express.Router();
 
-// ✅ Register with phone
+// ✅ Register
 router.post('/register', async (req, res) => {
   const { fullName, email, password, phone } = req.body;
 
@@ -30,6 +30,8 @@ router.post('/register', async (req, res) => {
 // ✅ Login
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
+  console.log("📥 POST /auth/login");
+  console.log("🔐 Request body:", req.body);
 
   try {
     const user = await User.findOne({ email });
@@ -37,20 +39,22 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ message: '❌ Invalid credentials' });
     }
 
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET || 'defaultsecret', {
       expiresIn: '1d',
     });
 
-   console.log("login attempt from:",req.headers.origin)
+    console.log("🔐 Login attempt from:", req.headers.origin);
 
+    // ✅ Localhost-safe cookie settings
     res.cookie('token', token, {
-  httpOnly: true,
-  secure: true, // ✅ force secure
-  sameSite: 'None', // ✅ allow cross-origin cookie
-  maxAge: 24 * 60 * 60 * 1000,
-});
+      httpOnly: true,
+      secure: false,      // ⛔ Do NOT use 'true' for localhost
+      sameSite: 'Lax',    // ✅ 'None' fails without HTTPS
+      maxAge: 24 * 60 * 60 * 1000, // 1 day
+    });
 
-console.log("set-cookie header")
+    console.log("🍪 Token sent to client:", token);
+    console.log("✅ Set-Cookie header sent");
 
     res.json({ message: '✅ Login successful' });
   } catch (err) {
@@ -61,10 +65,14 @@ console.log("set-cookie header")
 
 // ✅ Logout
 router.post('/logout', (req, res) => {
-  res.clearCookie('token').json({ message: '✅ Logged out' });
+  res.clearCookie('token', {
+    httpOnly: true,
+    secure: false,
+    sameSite: 'Lax',
+  }).json({ message: '✅ Logged out' });
 });
 
-// ✅ Forgot Password (send 6-digit code)
+// ✅ Forgot Password
 router.post('/forgot-password', async (req, res) => {
   const { email } = req.body;
 
@@ -74,10 +82,9 @@ router.post('/forgot-password', async (req, res) => {
 
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     user.resetCode = code;
-    user.resetCodeExpiry = Date.now() + 15 * 60 * 1000; // 15 mins
+    user.resetCodeExpiry = Date.now() + 15 * 60 * 1000;
     await user.save();
 
-    // TODO: Send code via email/SMS service
     console.log(`🔐 Reset code for ${email}: ${code}`);
 
     res.json({ message: '✅ Reset code sent to your email or phone' });
