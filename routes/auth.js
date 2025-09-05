@@ -6,15 +6,25 @@ const { protect } = require('../middleware/auth');
 
 const router = express.Router();
 
-// ✅ Register
+// ✅ Helper to set cookie safely on Render
+const setTokenCookie = (res, token) => {
+  // Backend cookie settings
+res.cookie('token', token, {
+  httpOnly: true,
+  secure: true,       // must be true on HTTPS
+  sameSite: 'None',   // must be None for cross-site
+  maxAge: 24*60*60*1000
+});
+
+};
+
+// ------------------- REGISTER -------------------
 router.post('/register', async (req, res) => {
   const { fullName, email, password, phone } = req.body;
 
   try {
     const existing = await User.findOne({ email });
-    if (existing) {
-      return res.status(400).json({ message: 'User already exists' });
-    }
+    if (existing) return res.status(400).json({ message: 'User already exists' });
 
     const hash = await bcrypt.hash(password, 10);
     const user = new User({ fullName, email, password: hash, phone });
@@ -27,11 +37,9 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// ✅ Login
+// ------------------- LOGIN -------------------
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
-  console.log("📥 POST /auth/login");
-  console.log("🔐 Request body:", req.body);
 
   try {
     const user = await User.findOne({ email });
@@ -43,19 +51,7 @@ router.post('/login', async (req, res) => {
       expiresIn: '1d',
     });
 
-    console.log("🔐 Login attempt from:", req.headers.origin);
-
-    // ✅ Localhost-safe cookie settings
-    res.cookie('token', token, {
-  httpOnly: true,
-  secure: true,        // ✅ required for HTTPS (Render is HTTPS)
-  sameSite: 'None',    // ✅ required for cross-origin cookies
-  maxAge: 24 * 60 * 60 * 1000, // 1 day
-});
-
-
-    console.log("🍪 Token sent to client:", token);
-    console.log("✅ Set-Cookie header sent");
+    setTokenCookie(res, token);
 
     res.json({ message: '✅ Login successful' });
   } catch (err) {
@@ -64,35 +60,29 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// ✅ Logout
-// ✅ Logout
+// ------------------- LOGOUT -------------------
 router.post('/logout', (req, res) => {
   res.clearCookie('token', {
     httpOnly: true,
-    secure: true,     // Render uses HTTPS
-    sameSite: 'None', // required for cross-site cookies
+    secure: true,
+    sameSite:'None'
   });
-
   res.json({ message: '✅ Logged out' });
 });
 
-
-
-// ✅ Forgot Password
+// ------------------- FORGOT PASSWORD -------------------
 router.post('/forgot-password', async (req, res) => {
   const { email } = req.body;
-
   try {
     const user = await User.findOne({ email });
     if (!user) return res.status(404).json({ message: '❌ User not found' });
 
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     user.resetCode = code;
-    user.resetCodeExpiry = Date.now() + 15 * 60 * 1000;
+    user.resetCodeExpiry = Date.now() + 15 * 60 * 1000; // 15 mins
     await user.save();
 
     console.log(`🔐 Reset code for ${email}: ${code}`);
-
     res.json({ message: '✅ Reset code sent to your email or phone' });
   } catch (err) {
     console.error('Forgot password error:', err);
@@ -100,19 +90,13 @@ router.post('/forgot-password', async (req, res) => {
   }
 });
 
-// ✅ Reset Password
+// ------------------- RESET PASSWORD -------------------
 router.post('/reset-password', async (req, res) => {
   const { email, code, newPassword } = req.body;
 
   try {
     const user = await User.findOne({ email });
-
-    if (
-      !user ||
-      user.resetCode !== code ||
-      !user.resetCodeExpiry ||
-      user.resetCodeExpiry < Date.now()
-    ) {
+    if (!user || user.resetCode !== code || !user.resetCodeExpiry || user.resetCodeExpiry < Date.now()) {
       return res.status(400).json({ message: '❌ Invalid or expired code' });
     }
 
@@ -128,7 +112,7 @@ router.post('/reset-password', async (req, res) => {
   }
 });
 
-// ✅ Get current user
+// ------------------- GET CURRENT USER -------------------
 router.get('/me', protect, async (req, res) => {
   try {
     const user = await User.findById(req.user._id).select('-password');
