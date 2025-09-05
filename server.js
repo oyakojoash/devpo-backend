@@ -10,26 +10,26 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-// ✅ Allowed origins
+// ✅ Allowed origins (Render + local dev)
 const allowedOrigins = [
-  'https://devpo1-frontend.onrender.com', // deployed frontend
+  'https://devpo1-frontend.onrender.com', // your deployed frontend
   'http://localhost:3000',                // local dev
 ];
 
-// ✅ CORS middleware
-app.use(cors({
-  origin: function (origin, callback) {
-    // allow requests with no origin (like mobile apps, curl)
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) !== -1) {
-      return callback(null, true);
-    } else {
-      return callback(new Error('CORS not allowed by server'));
-    }
-  },
-  credentials: true, // ✅ allow cookies
-}));
-
+// ✅ CORS setup
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true); // allow curl / mobile apps
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      } else {
+        return callback(new Error('❌ CORS not allowed'));
+      }
+    },
+    credentials: true, // ✅ critical: allows cookies
+  })
+);
 
 // ✅ Security & logging
 app.use(helmet());
@@ -42,7 +42,7 @@ app.use(cookieParser());
 // ✅ Connect DB
 const connectDB = async () => {
   try {
-    await mongoose.connect(process.env.MONGO_URI); // Mongoose v6+ no extra options needed
+    await mongoose.connect(process.env.MONGO_URI); // Mongoose v6+
     console.log('✅ MongoDB connected');
   } catch (error) {
     console.error('❌ MongoDB connection failed:', error.message);
@@ -54,8 +54,8 @@ connectDB();
 // ✅ Routes
 const productRoutes = require('./routes/productRoutes');
 const cartRoutes = require('./routes/cart');
-const authRoutes = require('./routes/auth');  // login, register, /auth/me
-const userRoutes = require('./routes/user');  // user profile, password update
+const authRoutes = require('./routes/auth');
+const userRoutes = require('./routes/user');
 
 app.use('/api/products', productRoutes);
 app.use('/api/cart', cartRoutes);
@@ -64,7 +64,7 @@ app.use('/api/users', userRoutes);
 
 // ✅ Root test route
 app.get('/', (req, res) => {
-  res.send('API is running...');
+  res.send('🚀 API is running on Render...');
 });
 
 // ✅ 404 handler
