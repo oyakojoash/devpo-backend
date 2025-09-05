@@ -16,29 +16,22 @@ exports.register = async (req, res) => {
     const hashed = await bcrypt.hash(password, 10);
 
     // Create new user
-    const user = new User({
-      fullName,
-      email,
-      password: hashed,
-      phone,
-    });
-
+    const user = new User({ fullName, email, password: hashed, phone });
     await user.save();
 
     // Generate JWT
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET || 'defaultsecret', {
       expiresIn: '7d',
     });
 
-    // Send token as HTTP-only cookie
+    // ✅ Always secure for Render (HTTPS)
     res.cookie('token', token, {
       httpOnly: true,
-      secure: false, // Set to true in production with HTTPS
-      sameSite: 'None', // Needed for cross-origin cookies on platforms like Render
+      secure: true,        // required for Render (HTTPS)
+      sameSite: 'None',    // required for cross-origin
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
-    // Respond with minimal user info
     res.status(201).json({
       message: '✅ Registration successful',
       user: {
