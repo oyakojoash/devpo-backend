@@ -65,11 +65,17 @@ router.post('/login', async (req, res) => {
 });
 
 // ✅ Logout
-res.clearCookie('token', {
-  httpOnly: true,
-  secure: true,
-  sameSite: 'None',
+// ✅ Logout
+router.post('/logout', (req, res) => {
+  res.clearCookie('token', {
+    httpOnly: true,
+    secure: true,     // Render uses HTTPS
+    sameSite: 'None', // required for cross-site cookies
+  });
+
+  res.json({ message: '✅ Logged out' });
 });
+
 
 
 // ✅ Forgot Password
