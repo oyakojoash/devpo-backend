@@ -47,11 +47,12 @@ router.post('/login', async (req, res) => {
 
     // ✅ Localhost-safe cookie settings
     res.cookie('token', token, {
-      httpOnly: true,
-      secure: false,      // ⛔ Do NOT use 'true' for localhost
-      sameSite: 'Lax',    // ✅ 'None' fails without HTTPS
-      maxAge: 24 * 60 * 60 * 1000, // 1 day
-    });
+  httpOnly: true,
+  secure: true,        // ✅ required for HTTPS (Render is HTTPS)
+  sameSite: 'None',    // ✅ required for cross-origin cookies
+  maxAge: 24 * 60 * 60 * 1000, // 1 day
+});
+
 
     console.log("🍪 Token sent to client:", token);
     console.log("✅ Set-Cookie header sent");
@@ -64,13 +65,12 @@ router.post('/login', async (req, res) => {
 });
 
 // ✅ Logout
-router.post('/logout', (req, res) => {
-  res.clearCookie('token', {
-    httpOnly: true,
-    secure: false,
-    sameSite: 'Lax',
-  }).json({ message: '✅ Logged out' });
+res.clearCookie('token', {
+  httpOnly: true,
+  secure: true,
+  sameSite: 'None',
 });
+
 
 // ✅ Forgot Password
 router.post('/forgot-password', async (req, res) => {
