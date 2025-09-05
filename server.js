@@ -18,13 +18,7 @@ const allowedOrigins = [
 
 // ✅ CORS middleware
 app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('❌ Not allowed by CORS'));
-    }
-  },
+  origin: allowedOrigins,
   credentials: true,
 }));
 
@@ -57,7 +51,7 @@ const userRoutes = require('./routes/user');  // user profile, password update
 app.use('/api/products', productRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/auth', authRoutes);
-app.use('/api/users', userRoutes); // clearer separation
+app.use('/api/users', userRoutes);
 
 // ✅ Root test route
 app.get('/', (req, res) => {
