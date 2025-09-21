@@ -12,7 +12,8 @@ const PORT = process.env.PORT || 10000;
 
 // ✅ Allowed origins (Frontend + local dev)
 const allowedOrigins = [
-  'https://devpo-frontend.onrender.com',   // ✅ Updated to match your actual frontend URL
+  'https://dvepo.netlify.app',             // ✅ ACTUAL frontend URL (Netlify)
+  'https://devpo-frontend.onrender.com',   // ✅ Backup Render URL
   'https://devpo1-frontend.onrender.com', // ✅ Keep old URL just in case
   'http://localhost:3000',                 // ✅ Local development
 ];
@@ -59,11 +60,11 @@ const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/user');
 const orderRoutes = require('./routes/my-orders'); // ✅ Added order routes for frontend
 
-app.use('/api/products', productRoutes);
-app.use('/api/cart', cartRoutes);
-app.use('/api/auth', authRoutes);
-app.use('/api/user', userRoutes);
-app.use('/api/orders', orderRoutes); // ✅ Added orders endpoint
+app.use('/products', productRoutes);    // Railway will add /api prefix
+app.use('/cart', cartRoutes);        // Railway will add /api prefix  
+app.use('/auth', authRoutes);        // Railway will add /api prefix
+app.use('/user', userRoutes);        // Railway will add /api prefix
+app.use('/orders', orderRoutes);     // Railway will add /api prefix
 
 // ✅ Root test route
 app.get('/', (req, res) => {
