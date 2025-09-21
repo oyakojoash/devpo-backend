@@ -60,11 +60,11 @@ const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/user');
 const orderRoutes = require('./routes/my-orders'); // ✅ Added order routes for frontend
 
-app.use('/products', productRoutes);    // Railway will add /api prefix
-app.use('/cart', cartRoutes);        // Railway will add /api prefix  
-app.use('/auth', authRoutes);        // Railway will add /api prefix
-app.use('/user', userRoutes);        // Railway will add /api prefix
-app.use('/orders', orderRoutes);     // Railway will add /api prefix
+app.use('/api/products', productRoutes);    // ✅ Frontend expects /api/products
+app.use('/api/cart', cartRoutes);        // ✅ Frontend expects /api/cart  
+app.use('/api/auth', authRoutes);        // ✅ Frontend expects /api/auth
+app.use('/api/user', userRoutes);        // ✅ Frontend expects /api/user
+app.use('/api/orders', orderRoutes);     // ✅ Frontend expects /api/orders
 
 // ✅ Root test route
 app.get('/', (req, res) => {
