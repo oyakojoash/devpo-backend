@@ -10,6 +10,16 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 10000;
 
+// 🔍 DEBUG: Check environment variables on startup
+console.log('🔍 Environment Debug:');
+console.log('  - NODE_ENV:', process.env.NODE_ENV);
+console.log('  - PORT:', process.env.PORT);
+console.log('  - MONGO_URI:', process.env.MONGO_URI ? 'SET ✅' : 'MISSING ❌');
+console.log('  - JWT_SECRET:', process.env.JWT_SECRET ? 'SET ✅' : 'MISSING ❌');
+if (!process.env.JWT_SECRET) {
+  console.error('🚨 CRITICAL: JWT_SECRET is missing! Authentication will fail!');
+}
+
 // ✅ Allowed origins (Frontend + local dev)
 const allowedOrigins = [
   'https://dvepo.netlify.app',             // ✅ ACTUAL frontend URL (Netlify)
