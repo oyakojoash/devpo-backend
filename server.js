@@ -10,10 +10,11 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-// ✅ Allowed origins (Render + local dev)
+// ✅ Allowed origins (Frontend + local dev)
 const allowedOrigins = [
-  'https://devpo1-frontend.onrender.com', // your deployed frontend
-  'http://localhost:3000',                // local dev
+  'https://devpo-frontend.onrender.com',   // ✅ Updated to match your actual frontend URL
+  'https://devpo1-frontend.onrender.com', // ✅ Keep old URL just in case
+  'http://localhost:3000',                 // ✅ Local development
 ];
 
 // ✅ CORS setup
@@ -56,11 +57,13 @@ const productRoutes = require('./routes/productRoutes');
 const cartRoutes = require('./routes/cart');
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/user');
+const orderRoutes = require('./routes/my-orders'); // ✅ Added order routes for frontend
 
 app.use('/api/products', productRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/auth', authRoutes);
-app.use('/api/users', userRoutes);
+app.use('/api/user', userRoutes);
+app.use('/api/orders', orderRoutes); // ✅ Added orders endpoint
 
 // ✅ Root test route
 app.get('/', (req, res) => {

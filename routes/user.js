@@ -1,14 +1,10 @@
 const express = require('express');
-const { protect } = require('../middleware/auth'); // Use improved middleware
+const { protect } = require('../middleware/auth');
 const userCtrl = require('../controllers/userController');
 const router = express.Router();
 
-// GET /api/auth/me - Get logged-in user's info
-router.get('/me', protect, userCtrl.getUser);     // now non-conflicting
-router.put('/me', protect, userCtrl.updateProfile);
-router.put('/password', protect, userCtrl.updatePassword);
-
-
-
+// ✅ User profile management (user data fetched via /api/auth/me)
+router.put('/me', protect, userCtrl.updateProfile);      // PUT /api/user/me
+router.put('/password', protect, userCtrl.updatePassword); // PUT /api/user/password
 
 module.exports = router;
