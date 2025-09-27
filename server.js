@@ -5,6 +5,7 @@ const cookieParser = require('cookie-parser');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
+const path = require('path');
 
 dotenv.config();
 const app = express();
@@ -50,6 +51,10 @@ app.use(morgan('dev'));
 // ✅ Core middleware
 app.use(express.json());
 app.use(cookieParser());
+
+// ✅ Serve static files for images
+app.use('/images', express.static(path.join(__dirname, 'public/images')));
+app.use('/public', express.static(path.join(__dirname, 'public')));
 
 // ✅ Connect DB
 const connectDB = async () => {
