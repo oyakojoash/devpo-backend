@@ -5,7 +5,7 @@ const cookieParser = require('cookie-parser');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
-const path = require("path");
+const path = require('path');
 
 dotenv.config();
 const app = express();
@@ -21,12 +21,12 @@ if (!process.env.JWT_SECRET) {
   console.error('🚨 CRITICAL: JWT_SECRET is missing! Authentication will fail!');
 }
 
-// ✅ Allowed origins (Frontend + local dev)
+// ✅ Allowed origins
 const allowedOrigins = [
-  'https://dvepo.netlify.app',             // ✅ ACTUAL frontend URL (Netlify)
-  'https://devpo-frontend.onrender.com',   // ✅ Backup Render URL
-  'https://devpo1-frontend.onrender.com', // ✅ Keep old URL just in case
-  'http://localhost:3000',                 // ✅ Local development
+  'https://dvepo.netlify.app',
+  'https://devpo-frontend.onrender.com',
+  'https://devpo1-frontend.onrender.com',
+  'http://localhost:3000',
 ];
 
 // ✅ CORS setup
@@ -40,11 +40,9 @@ app.use(
         return callback(new Error('❌ CORS not allowed'));
       }
     },
-    credentials: true, // ✅ critical: allows cookies
+    credentials: true,
   })
 );
-
-app.use("/public", express.static(path.join(__dirname, "public")));
 
 // ✅ Security & logging
 app.use(helmet());
@@ -54,10 +52,14 @@ app.use(morgan('dev'));
 app.use(express.json());
 app.use(cookieParser());
 
+// ✅ Serve static images
+app.use('/images', express.static(path.join(__dirname, 'public/images')));
+app.use('/images/vendors', express.static(path.join(__dirname, 'public/images/vendors')));
+
 // ✅ Connect DB
 const connectDB = async () => {
   try {
-    await mongoose.connect(process.env.MONGO_URI); // Mongoose v6+
+    await mongoose.connect(process.env.MONGO_URI);
     console.log('✅ MongoDB connected');
   } catch (error) {
     console.error('❌ MongoDB connection failed:', error.message);
@@ -71,20 +73,17 @@ const productRoutes = require('./routes/productRoutes');
 const cartRoutes = require('./routes/cart');
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/user');
-const orderRoutes = require('./routes/my-orders'); // ✅ Added order routes for frontend
+const orderRoutes = require('./routes/my-orders');
 
-app.use('/api/products', productRoutes);    // ✅ Frontend expects /api/products
-app.use('/api/cart', cartRoutes);        // ✅ Frontend expects /api/cart  
-app.use('/api/auth', authRoutes);        // ✅ Frontend expects /api/auth
-app.use('/api/user', userRoutes);        // ✅ Frontend expects /api/user
-app.use('/api/orders', orderRoutes);     // ✅ Frontend expects /api/orders
-
-// ✅ serve files from /public/images at /images URL
-app.use("/images", express.static(path.join(__dirname, "public/images")));
+app.use('/api/products', productRoutes);
+app.use('/api/cart', cartRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/user', userRoutes);
+app.use('/api/orders', orderRoutes);
 
 // ✅ Root test route
 app.get('/', (req, res) => {
-  res.send('🚀 API is running on Render...');
+  res.send('🚀 API is running');
 });
 
 // ✅ 404 handler
