@@ -11,15 +11,13 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-// 🔍 DEBUG: Check environment variables on startup
+// 🔍 Debug environment variables
 console.log('🔍 Environment Debug:');
 console.log('  - NODE_ENV:', process.env.NODE_ENV);
 console.log('  - PORT:', process.env.PORT);
 console.log('  - MONGO_URI:', process.env.MONGO_URI ? 'SET ✅' : 'MISSING ❌');
 console.log('  - JWT_SECRET:', process.env.JWT_SECRET ? 'SET ✅' : 'MISSING ❌');
-if (!process.env.JWT_SECRET) {
-  console.error('🚨 CRITICAL: JWT_SECRET is missing! Authentication will fail!');
-}
+if (!process.env.JWT_SECRET) console.error('🚨 JWT_SECRET missing!');
 
 // ✅ Allowed origins
 const allowedOrigins = [
@@ -30,9 +28,16 @@ const allowedOrigins = [
 ];
 
 // ✅ CORS options
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true); // allow curl / mobile apps
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    callback(new Error('❌ CORS not allowed'));
+  },
+  credentials: true,
+};
 
-
-// ✅ Apply CORS globally for APIs
+// ✅ Apply CORS globally
 app.use(cors(corsOptions));
 
 // ✅ Security & logging
@@ -42,35 +47,30 @@ app.use(morgan('dev'));
 // ✅ Core middleware
 app.use(express.json());
 app.use(cookieParser());
-const corsOptions = {
-  origin: function(origin, callback) {
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-    callback(new Error('CORS not allowed'));
+
+// ✅ Serve product images with proper CORS
+app.use(
+  '/images',
+  (req, res, next) => {
+    res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    next();
   },
-  credentials: true,
-};
+  express.static(path.join(__dirname, 'public/images'))
+);
 
-// Product images
-app.use('/images', (req, res, next) => {
-  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  next();
-}, express.static(path.join(__dirname, 'public/images')));
+// ✅ Serve vendor images with proper CORS
+app.use(
+  '/images/vendors',
+  (req, res, next) => {
+    res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    next();
+  },
+  express.static(path.join(__dirname, 'public/images/vendors'))
+);
 
-// Vendor images
-app.use('/images/vendors', (req, res, next) => {
-  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  next();
-}, express.static(path.join(__dirname, 'public/images/vendors')));
-
-
-
-
-// ✅ Connect DB
+// ✅ Connect to MongoDB
 const connectDB = async () => {
   try {
     await mongoose.connect(process.env.MONGO_URI);
@@ -101,7 +101,7 @@ app.get('/', (req, res) => {
 });
 
 // ✅ 404 handler
-app.use((req, res, next) => {
+app.use((req, res) => {
   res.status(404).json({ error: '❌ Route not found' });
 });
 
