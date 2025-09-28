@@ -5,6 +5,7 @@ const cookieParser = require('cookie-parser');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
+const path = require("path");
 
 dotenv.config();
 const app = express();
@@ -43,6 +44,8 @@ app.use(
   })
 );
 
+app.use("/public", express.static(path.join(__dirname, "public")));
+
 // ✅ Security & logging
 app.use(helmet());
 app.use(morgan('dev'));
@@ -75,6 +78,9 @@ app.use('/api/cart', cartRoutes);        // ✅ Frontend expects /api/cart
 app.use('/api/auth', authRoutes);        // ✅ Frontend expects /api/auth
 app.use('/api/user', userRoutes);        // ✅ Frontend expects /api/user
 app.use('/api/orders', orderRoutes);     // ✅ Frontend expects /api/orders
+
+// ✅ serve files from /public/images at /images URL
+app.use("/images", express.static(path.join(__dirname, "public/images")));
 
 // ✅ Root test route
 app.get('/', (req, res) => {
