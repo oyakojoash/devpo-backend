@@ -52,20 +52,40 @@ app.use(morgan('dev'));
 app.use(express.json());
 app.use(cookieParser());
 
-// ✅ Serve static files for images with CORS headers
-app.use('/images', (req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
-  next();
-}, express.static(path.join(__dirname, 'public/images')));
+// ✅ Image serving API endpoint (instead of static middleware)
+app.get('/images/:filename', (req, res) => {
+  const filename = req.params.filename;
+  const filepath = path.join(__dirname, 'public/images', filename);
+  
+  // Set proper headers for images
+  res.setHeader('Content-Type', 'image/jpeg');
+  res.setHeader('Cache-Control', 'public, max-age=31536000');
+  
+  // Send the file
+  res.sendFile(filepath, (err) => {
+    if (err) {
+      // Send fallback image if original not found
+      const fallbackPath = path.join(__dirname, 'public/images/fallback.jpeg');
+      res.sendFile(fallbackPath);
+    }
+  });
+});
 
-app.use('/public', (req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
-  next();
-}, express.static(path.join(__dirname, 'public')));
+// ✅ Vendor logo API endpoint
+app.get('/images/vendors/:filename', (req, res) => {
+  const filename = req.params.filename;
+  const filepath = path.join(__dirname, 'public/images/vendors', filename);
+  
+  res.setHeader('Content-Type', 'image/png');
+  res.setHeader('Cache-Control', 'public, max-age=31536000');
+  
+  res.sendFile(filepath, (err) => {
+    if (err) {
+      const fallbackPath = path.join(__dirname, 'public/images/fallback-logo.png');
+      res.sendFile(fallbackPath);
+    }
+  });
+});
 
 // ✅ Connect DB
 const connectDB = async () => {
