@@ -30,10 +30,7 @@ const allowedOrigins = [
 ];
 
 // ✅ CORS options
-const corsOptions = {
-  origin: allowedOrigins,
-  credentials: true,
-};
+
 
 // ✅ Apply CORS globally for APIs
 app.use(cors(corsOptions));
@@ -45,10 +42,33 @@ app.use(morgan('dev'));
 // ✅ Core middleware
 app.use(express.json());
 app.use(cookieParser());
+const corsOptions = {
+  origin: function(origin, callback) {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    callback(new Error('CORS not allowed'));
+  },
+  credentials: true,
+};
 
-// ✅ Serve static images with CORS headers
-app.use('/images', cors(corsOptions), express.static(path.join(__dirname, 'public/images')));
-app.use('/images/vendors', cors(corsOptions), express.static(path.join(__dirname, 'public/images/vendors')));
+// Product images
+app.use('/images', (req, res, next) => {
+  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  next();
+}, express.static(path.join(__dirname, 'public/images')));
+
+// Vendor images
+app.use('/images/vendors', (req, res, next) => {
+  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  next();
+}, express.static(path.join(__dirname, 'public/images/vendors')));
+
+
+
 
 // ✅ Connect DB
 const connectDB = async () => {
