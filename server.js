@@ -52,9 +52,20 @@ app.use(morgan('dev'));
 app.use(express.json());
 app.use(cookieParser());
 
-// ✅ Serve static files for images
-app.use('/images', express.static(path.join(__dirname, 'public/images')));
-app.use('/public', express.static(path.join(__dirname, 'public')));
+// ✅ Serve static files for images with CORS headers
+app.use('/images', (req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+  next();
+}, express.static(path.join(__dirname, 'public/images')));
+
+app.use('/public', (req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+  next();
+}, express.static(path.join(__dirname, 'public')));
 
 // ✅ Connect DB
 const connectDB = async () => {
