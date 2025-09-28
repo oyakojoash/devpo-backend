@@ -29,20 +29,14 @@ const allowedOrigins = [
   'http://localhost:3000',
 ];
 
-// ✅ CORS setup
-app.use(
-  cors({
-    origin: function (origin, callback) {
-      if (!origin) return callback(null, true); // allow curl / mobile apps
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      } else {
-        return callback(new Error('❌ CORS not allowed'));
-      }
-    },
-    credentials: true,
-  })
-);
+// ✅ CORS options
+const corsOptions = {
+  origin: allowedOrigins,
+  credentials: true,
+};
+
+// ✅ Apply CORS globally for APIs
+app.use(cors(corsOptions));
 
 // ✅ Security & logging
 app.use(helmet());
@@ -52,9 +46,9 @@ app.use(morgan('dev'));
 app.use(express.json());
 app.use(cookieParser());
 
-// ✅ Serve static images
-app.use('/images', express.static(path.join(__dirname, 'public/images')));
-app.use('/images/vendors', express.static(path.join(__dirname, 'public/images/vendors')));
+// ✅ Serve static images with CORS headers
+app.use('/images', cors(corsOptions), express.static(path.join(__dirname, 'public/images')));
+app.use('/images/vendors', cors(corsOptions), express.static(path.join(__dirname, 'public/images/vendors')));
 
 // ✅ Connect DB
 const connectDB = async () => {
