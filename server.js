@@ -6,6 +6,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const path = require('path');
+const Grid = require("gridfs-stream");
 
 dotenv.config();
 const app = express();
@@ -81,6 +82,13 @@ const connectDB = async () => {
   }
 };
 connectDB();
+let gfs;
+conn.once("open", () => {
+  gfs = Grid(conn.db, mongoose.mongo);
+  gfs.collection("uploads");
+  app.locals.gfs = gfs;
+  console.log("MongoDB + GridFS initialized");
+});
 
 // ✅ Routes
 const productRoutes = require('./routes/productRoutes');
@@ -88,12 +96,14 @@ const cartRoutes = require('./routes/cart');
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/user');
 const orderRoutes = require('./routes/my-orders');
+const imageRoutes = require("./routes/imageRoutes");
 
 app.use('/api/products', productRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/orders', orderRoutes);
+const imageRoutes = require("./routes/imageRoutes");
 
 // ✅ Root test route
 app.get('/', (req, res) => {
