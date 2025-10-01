@@ -50,15 +50,13 @@ app.use(express.json());
 app.use(cookieParser());
 
 // ✅ Serve product images with proper CORS
-app.use(
-  '/images',
-  (req, res, next) => {
-    res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
-    res.header('Access-Control-Allow-Credentials', 'true');
-    next();
-  },
-  express.static(path.join(__dirname, 'public/images'))
-);
+// ✅ Enable CORS for images
+app.use('/images', (req, res, next) => {
+  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  next();
+}, imageRoutes);
+
 
 // ✅ Serve vendor images with proper CORS
 app.use(
