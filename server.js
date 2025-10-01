@@ -1,4 +1,4 @@
-// server.js (cleaned)
+// server.js (production-ready)
 const express = require('express');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
@@ -30,16 +30,15 @@ const allowedOrigins = [
   'http://localhost:3000',
 ];
 
-const corsOptions = {
+app.use(cors({
   origin: (origin, callback) => {
     if (!origin) return callback(null, true);
     if (allowedOrigins.includes(origin)) return callback(null, true);
     callback(new Error('❌ CORS not allowed'));
   },
   credentials: true,
-};
+}));
 
-app.use(cors(corsOptions));
 app.use(helmet());
 app.use(morgan('dev'));
 app.use(express.json());
@@ -66,32 +65,36 @@ const connectDB = async () => {
 connectDB();
 
 // -------------------- IMAGE ROUTE --------------------
-app.get('/images/:filename', (req, res) => {
-  const { filename } = req.params;
-  const gfs = req.app.locals.gfs;
-
+// Global CORS for images
+app.use('/images', (req, res, next) => {
   res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
   res.header('Access-Control-Allow-Credentials', 'true');
+  next();
+});
+
+// Handle GridFS, local, nested folders, fallback
+app.get('/images/*', (req, res) => {
+  const filePath = req.params[0]; // e.g., "vendors/vendor1.png"
+  const gfs = req.app.locals.gfs;
+
+  const serveLocal = (file) => {
+    const localPath = path.join(__dirname, 'public/images', file);
+    if (fs.existsSync(localPath)) return res.sendFile(localPath);
+    return res.sendFile(path.join(__dirname, 'public/images/fallback.jpeg'));
+  };
 
   if (gfs) {
-    gfs.files.findOne({ filename }, (err, file) => {
+    gfs.files.findOne({ filename: filePath }, (err, file) => {
       if (file && !err) {
         const readstream = gfs.createReadStream(file.filename);
         res.set('Content-Type', file.contentType || 'application/octet-stream');
+        readstream.on('error', () => serveLocal(filePath));
         return readstream.pipe(res);
       }
-
-      // Try local folder
-      const localPath = path.join(__dirname, 'public/images', filename);
-      if (fs.existsSync(localPath)) return res.sendFile(localPath);
-
-      // Fallback
-      return res.sendFile(path.join(__dirname, 'public/images/fallback.jpeg'));
+      serveLocal(filePath);
     });
   } else {
-    const localPath = path.join(__dirname, 'public/images', filename);
-    if (fs.existsSync(localPath)) return res.sendFile(localPath);
-    return res.sendFile(path.join(__dirname, 'public/images/fallback.jpeg'));
+    serveLocal(filePath);
   }
 });
 
