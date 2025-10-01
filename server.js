@@ -1,4 +1,4 @@
-// server.js (production-ready)
+// server.js
 const express = require('express');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
@@ -64,47 +64,27 @@ const connectDB = async () => {
 };
 connectDB();
 
-// -------------------- IMAGE ROUTE --------------------
-// Global CORS for images
+// -------------------- ROUTES --------------------
+// Require routes first
+const productRoutes = require('./routes/productRoutes');
+const cartRoutes = require('./routes/cart');
+const authRoutes = require('./routes/auth');
+const userRoutes = require('./routes/user');
+const orderRoutes = require('./routes/my-orders');
+const imageRoutes = require('./routes/imageRoutes'); // Image route for GridFS + fallback
+
+// -------------------- IMAGE SERVE --------------------
+// Global CORS headers for images
 app.use('/images', (req, res, next) => {
   res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
   res.header('Access-Control-Allow-Credentials', 'true');
   next();
 });
 
-// Handle GridFS, local, nested folders, fallback
-app.get('/images/*', (req, res) => {
-  const filePath = req.params[0]; // e.g., "vendors/vendor1.png"
-  const gfs = req.app.locals.gfs;
-
-  const serveLocal = (file) => {
-    const localPath = path.join(__dirname, 'public/images', file);
-    if (fs.existsSync(localPath)) return res.sendFile(localPath);
-    return res.sendFile(path.join(__dirname, 'public/images/fallback.jpeg'));
-  };
-
-  if (gfs) {
-    gfs.files.findOne({ filename: filePath }, (err, file) => {
-      if (file && !err) {
-        const readstream = gfs.createReadStream(file.filename);
-        res.set('Content-Type', file.contentType || 'application/octet-stream');
-        readstream.on('error', () => serveLocal(filePath));
-        return readstream.pipe(res);
-      }
-      serveLocal(filePath);
-    });
-  } else {
-    serveLocal(filePath);
-  }
-});
+// Serve images through router
+app.use('/images', imageRoutes); // mounted once
 
 // -------------------- API ROUTES --------------------
-const productRoutes = require('./routes/productRoutes');
-const cartRoutes = require('./routes/cart');
-const authRoutes = require('./routes/auth');
-const userRoutes = require('./routes/user');
-const orderRoutes = require('./routes/my-orders');
-
 app.use('/api/products', productRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/auth', authRoutes);
