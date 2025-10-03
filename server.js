@@ -70,7 +70,7 @@ const productRoutes = require('./routes/productRoutes');
 const cartRoutes = require('./routes/cart');
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/user');
-const orderRoutes = require('./routes/orders');
+const orderRoutes = require('./routes/order');
 const vendorsRoutes = require('./routes/vendors');
 const imageRoutes = require('./routes/imageRoutes'); // Image route for GridFS + fallback
 
