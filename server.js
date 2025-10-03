@@ -70,7 +70,8 @@ const productRoutes = require('./routes/productRoutes');
 const cartRoutes = require('./routes/cart');
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/user');
-const orderRoutes = require('./routes/my-orders');
+const orderRoutes = require('./routes/orders');
+const vendorsRoutes = require('./routes/vendors');
 const imageRoutes = require('./routes/imageRoutes'); // Image route for GridFS + fallback
 
 // -------------------- IMAGE SERVE --------------------
@@ -101,6 +102,7 @@ app.use('/api/cart', cartRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/orders', orderRoutes);
+app.use('/api/vendors',vendorsRoutes );
 
 // -------------------- ROOT & ERROR --------------------
 app.get('/', (req, res) => res.send('🚀 API is running'));
