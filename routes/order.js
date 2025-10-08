@@ -10,6 +10,29 @@ const {
   cancelOrder 
 } = require('../controllers/orderController');
 
+// ✅ POST /api/orders - Place a new order
+router.post('/', protect, async (req, res) => {
+  try {
+    const { products, totalAmount } = req.body;
+    if (!products || products.length === 0) {
+      return res.status(400).json({ message: 'No products in order' });
+    }
+
+    const order = new Order({
+      user: req.user._id,
+      products,
+      totalAmount,
+      status: 'pending',
+    });
+
+    await order.save();
+    res.status(201).json(order);
+  } catch (err) {
+    console.error('❌ Error placing order:', err.message);
+    res.status(500).json({ message: 'Failed to place order' });
+  }
+});
+
 // ✅ GET /api/orders/my-orders - Get current user's orders
 router.get('/my-orders', protect, getUserOrders);
 
@@ -21,7 +44,7 @@ router.patch('/:id/cancel', protect, cancelOrder);
 
 /* --------------------------------------------------
    GET /api/admin/orders - Get all orders (Admin only)
-   
+
 --------------------------------------------------- */
 router.get('/orders', protect, isAdmin, async (req, res) => {
   try {
