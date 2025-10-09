@@ -13,7 +13,7 @@ const {
 // ✅ POST /api/orders - Place a new order
 router.post('/', protect, async (req, res) => {
   try {
-    const { products, totalAmount } = req.body;
+    const { products,totalPrice  } = req.body;
     if (!products || products.length === 0) {
       return res.status(400).json({ message: 'No products in order' });
     }
