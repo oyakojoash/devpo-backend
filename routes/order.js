@@ -21,7 +21,7 @@ router.post('/', protect, async (req, res) => {
     const order = new Order({
       user: req.user._id,
       products,
-      totalAmount,
+      totalPrice,
       status: 'pending',
     });
 
