@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Vendor = require('../models/Vendor');
+const Product = require('../models/Product'); // ✅ Added Product model import
 
 // ✅ Get ALL vendors
 router.get('/', async (req, res) => {
@@ -12,7 +13,8 @@ router.get('/', async (req, res) => {
     res.status(500).json({ message: 'Failed to load vendors' });
   }
 });
-// POST /api/vendors - Add a new vendor
+
+// ✅ POST /api/vendors - Add a new vendor
 router.post('/', async (req, res) => {
   try {
     const newVendor = new Vendor(req.body);
@@ -24,7 +26,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-// DELETE /api/vendors/:id - Delete vendor by Mongo _id
+// ✅ DELETE /api/vendors/:id - Delete vendor by Mongo _id
 router.delete('/:id', async (req, res) => {
   try {
     const deleted = await Vendor.findByIdAndDelete(req.params.id);
@@ -36,7 +38,6 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
-
 // ✅ Get ONE vendor by :vendorId (case-insensitive)
 router.get('/:vendorId', async (req, res) => {
   const requestedId = req.params.vendorId;
@@ -44,7 +45,7 @@ router.get('/:vendorId', async (req, res) => {
 
   try {
     const vendor = await Vendor.findOne({
-      id: new RegExp(`^${requestedId}$`, 'i') // Case-insensitive
+      id: new RegExp(`^${requestedId}$`, 'i') // Case-insensitive match
     });
 
     if (!vendor) {
@@ -56,6 +57,27 @@ router.get('/:vendorId', async (req, res) => {
   } catch (err) {
     console.error('🔥 DB Error:', err);
     res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// ✅ NEW: Get all products for a specific vendor
+router.get('/:vendorId/products', async (req, res) => {
+  const vendorId = req.params.vendorId;
+  console.log('📦 Fetching products for vendor:', vendorId);
+
+  try {
+    // Find products that belong to this vendor
+    const products = await Product.find({ vendorId });
+
+    if (!products.length) {
+      console.warn('⚠️ No products found for vendor:', vendorId);
+      return res.status(404).json({ message: 'No products found for this vendor' });
+    }
+
+    res.json(products);
+  } catch (err) {
+    console.error('🔥 Error fetching vendor products:', err);
+    res.status(500).json({ message: 'Failed to load vendor products' });
   }
 });
 
