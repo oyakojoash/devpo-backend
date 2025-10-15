@@ -3,17 +3,14 @@ const Order = require('../models/Order');
 const { protect, isAdmin } = require('../middleware/auth');
 
 const router = express.Router();
+const { getUserOrders, getOrderById, cancelOrder } = require('../controllers/orderController');
 
-const { 
-  getUserOrders, 
-  getOrderById, 
-  cancelOrder 
-} = require('../controllers/orderController');
-
-// ✅ POST /api/orders - Place a new order
+/* --------------------------------------------------
+   POST /api/orders - Place a new order
+--------------------------------------------------- */
 router.post('/', protect, async (req, res) => {
   try {
-    const { products,totalPrice  } = req.body;
+    const { products, totalPrice } = req.body;
     if (!products || products.length === 0) {
       return res.status(400).json({ message: 'No products in order' });
     }
@@ -33,24 +30,30 @@ router.post('/', protect, async (req, res) => {
   }
 });
 
-// ✅ GET /api/orders/my-orders - Get current user's orders
+/* --------------------------------------------------
+   GET /api/orders/my-orders - Current user's orders
+--------------------------------------------------- */
 router.get('/my-orders', protect, getUserOrders);
 
-// ✅ GET /api/orders/:id - Get single order by ID
+/* --------------------------------------------------
+   GET /api/orders/:id - Single order by ID
+--------------------------------------------------- */
 router.get('/:id', protect, getOrderById);
 
-// ✅ PATCH /api/orders/:id/cancel - Cancel an order
+/* --------------------------------------------------
+   PATCH /api/orders/:id/cancel - Cancel order
+--------------------------------------------------- */
 router.patch('/:id/cancel', protect, cancelOrder);
 
 /* --------------------------------------------------
-   GET /api/admin/orders - Get all orders (Admin only)
-
+   GET /api/admin/orders - Get all orders (Admin)
 --------------------------------------------------- */
 router.get('/orders', protect, isAdmin, async (req, res) => {
   try {
     const orders = await Order.find({})
       .sort({ createdAt: -1 })
-      .populate('user', 'name email');
+      .populate('user', 'name email phone') // ✅ populate user info
+      .populate('products.productId', 'name price image'); // optional: populate product info
 
     res.json(orders);
   } catch (err) {
@@ -60,17 +63,15 @@ router.get('/orders', protect, isAdmin, async (req, res) => {
 });
 
 /* --------------------------------------------------
-   GET /api/admin/orders/:id - View single order (Admin only)
+   GET /api/admin/orders/:id - Single order (Admin)
 --------------------------------------------------- */
 router.get('/orders/:id', protect, isAdmin, async (req, res) => {
   try {
     const order = await Order.findById(req.params.id)
-      .populate('user', 'name email')
-      .populate('products.productId');
+      .populate('user', 'name email phone') // ✅ populate user info
+      .populate('products.productId', 'name price image'); // optional: populate product info
 
-    if (!order) {
-      return res.status(404).json({ message: 'Order not found' });
-    }
+    if (!order) return res.status(404).json({ message: 'Order not found' });
 
     res.json(order);
   } catch (err) {
@@ -80,7 +81,7 @@ router.get('/orders/:id', protect, isAdmin, async (req, res) => {
 });
 
 /* --------------------------------------------------
-   PATCH /api/admin/orders/:id/status - Update order status (Admin only)
+   PATCH /api/admin/orders/:id/status - Update order status
 --------------------------------------------------- */
 router.patch('/orders/:id/status', protect, isAdmin, async (req, res) => {
   try {

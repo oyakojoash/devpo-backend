@@ -21,6 +21,7 @@ const productValidators = [
   body('price').isNumeric().withMessage('Price must be a number'),
   body('image').notEmpty().withMessage('Image URL is required'),
   body('vendorId').notEmpty().withMessage('Vendor ID is required'),
+  body('details').optional().isString().withMessage('Details must be text'),
 ];
 
 // ✅ GET /api/products?search=&page=&limit=
@@ -96,6 +97,7 @@ router.put(
     body('price').optional().isNumeric().withMessage('Price must be a number'),
     body('image').optional().notEmpty().withMessage('Image URL is required'),
     body('vendorId').optional().notEmpty().withMessage('Vendor ID is required'),
+    body('details').optional().isString().withMessage('Details must be text'),
   ],
   asyncHandler(async (req, res) => {
     const errors = validationResult(req);

@@ -16,7 +16,11 @@ const productSchema = new mongoose.Schema({
   vendorId: {
     type: String,
     required: true
-  }
+  },
+  details: {
+    type: String,  
+    required: false
+  },
 });
 
 const Product = mongoose.model('Product', productSchema);
