@@ -6,6 +6,11 @@ const orderSchema = new mongoose.Schema({
     ref: 'User',
     required: true,
   },
+  userInfo: {  // <-- new field to store snapshot of contact info
+    name: { type: String, required: true },
+    email: { type: String },
+    phone: { type: String },
+  },
   products: [
     {
       productId: {
@@ -13,21 +18,12 @@ const orderSchema = new mongoose.Schema({
         ref: 'Product',
         required: true,
       },
-      name: {
-        type: String,
-        required: true,
-      },
-      price: {
-        type: Number,
-        required: true,
-      },
-      quantity: {
-        type: Number,
-        required: true,
-      },
+      name: { type: String, required: true },
+      price: { type: Number, required: true },
+      quantity: { type: Number, required: true },
     },
   ],
-  totalPrice: {  // ✅ Renamed from totalAmount for frontend consistency
+  totalPrice: {  
     type: Number,
     required: true,
   },
@@ -41,7 +37,7 @@ const orderSchema = new mongoose.Schema({
     city: { type: String, required: true },
     country: { type: String, required: true },
     postalCode: { type: String, required: true }, 
-   },*/
+  },*/
 },{
   timestamps: true,
 });

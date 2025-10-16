@@ -10,13 +10,19 @@ const { getUserOrders, getOrderById, cancelOrder } = require('../controllers/ord
 --------------------------------------------------- */
 router.post('/', protect, async (req, res) => {
   try {
-    const { products, totalPrice } = req.body;
+    const { products, totalPrice, name, email, phone } = req.body;
+
     if (!products || products.length === 0) {
       return res.status(400).json({ message: 'No products in order' });
     }
 
     const order = new Order({
-      user: req.user._id,
+      user: req.user._id, // still keep reference if you want
+      userInfo: {         // store snapshot of entered info
+        name: name || req.user.name,
+        email: email || req.user.email,
+        phone: phone || req.user.phone,
+      },
       products,
       totalPrice,
       status: 'pending',
@@ -29,6 +35,7 @@ router.post('/', protect, async (req, res) => {
     res.status(500).json({ message: 'Failed to place order' });
   }
 });
+
 
 /* --------------------------------------------------
    GET /api/orders/my-orders - Current user's orders
