@@ -1,27 +1,31 @@
 const mongoose = require('mongoose');
 
-const productSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true
+const productSchema = new mongoose.Schema(
+  {
+    name: {
+      type: String,
+      required: true,
+    },
+    price: {
+      type: Number,
+      required: true,
+    },
+    image: {
+      type: String,
+      required: true,
+    },
+    vendorId: {
+      type: String,
+      required: true,
+    },
+    description: {   // renamed from 'details' for consistency
+      type: String,
+      required: false,
+    },
+    
   },
-  price: {
-    type: Number,
-    required: true
-  },
-  image: {
-    type: String,
-    required: true
-  },
-  vendorId: {
-    type: String,
-    required: true
-  },
-  details: {
-    type: String,  
-    required: false
-  },
-});
+  { timestamps: true } // adds createdAt and updatedAt
+);
 
 const Product = mongoose.model('Product', productSchema);
 

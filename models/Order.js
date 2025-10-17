@@ -7,7 +7,7 @@ const orderSchema = new mongoose.Schema({
     required: true,
   },
   userInfo: {  // <-- new field to store snapshot of contact info
-    name: { type: String, required: true },
+    name: { type: String, required: false },
     email: { type: String },
     phone: { type: String },
   },

@@ -50,6 +50,17 @@ router.post('/logout', (req, res) => {
   res.clearCookie('adminToken').json({ message: 'Admin logged out' });
 });
 
+// ✅ Admin: Create Product
+router.post('/products', protectAdmin, async (req, res) => {
+  try {
+    const product = await Product.create(req.body);
+    res.status(201).json(product);
+  } catch (err) {
+    console.error('Create product failed:', err);
+    res.status(500).json({ message: 'Failed to create product' });
+  }
+});
+
 // ✅ Check Admin Session
 router.get('/me', protectAdmin, (req, res) => res.json(req.admin));
 
@@ -120,6 +131,17 @@ router.delete('/users/:id', protectAdmin, async (req, res) => {
   } catch (err) {
     console.error('Delete user error:', err);
     res.status(500).json({ message: 'Failed to delete user' });
+  }
+});
+
+// ✅ Admin: Fetch All Products
+router.get('/products', protectAdmin, async (req, res) => {
+  try {
+    const products = await Product.find().sort({ createdAt: -1 });
+    res.json(products);
+  } catch (err) {
+    console.error('Fetch products failed:', err);
+    res.status(500).json({ message: 'Failed to fetch products' });
   }
 });
 
