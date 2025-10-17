@@ -91,7 +91,7 @@ app.use('/images', (req, res, next) => {
 // Serve images through router
 // -------------------- IMAGE SERVE --------------------
 // Global CORS & COEP/CORP headers for images
-app.use('/images', (req, res, next) => {
+app.use('/api/images', (req, res, next) => {
   res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
   res.header('Access-Control-Allow-Credentials', 'true');
   res.header('Cross-Origin-Resource-Policy', 'cross-origin'); // ✅ allow cross-origin usage
