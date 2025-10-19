@@ -1,4 +1,3 @@
-// server.js
 const express = require('express');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
@@ -6,9 +5,6 @@ const cookieParser = require('cookie-parser');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
-const path = require('path');
-const Grid = require('gridfs-stream');
-const fs = require('fs');
 
 dotenv.config();
 const app = express();
@@ -20,7 +16,6 @@ console.log('  - NODE_ENV:', process.env.NODE_ENV);
 console.log('  - PORT:', PORT);
 console.log('  - MONGO_URI:', process.env.MONGO_URI ? 'SET ✅' : 'MISSING ❌');
 console.log('  - JWT_SECRET:', process.env.JWT_SECRET ? 'SET ✅' : 'MISSING ❌');
-if (!process.env.JWT_SECRET) console.error('🚨 JWT_SECRET missing!');
 
 // -------------------- MIDDLEWARE --------------------
 const allowedOrigins = [
@@ -44,29 +39,30 @@ app.use(morgan('dev'));
 app.use(express.json());
 app.use(cookieParser());
 
-// -------------------- CONNECT MONGO --------------------
+// -------------------- CONNECT MONGO + GRIDFSBUCKET --------------------
+let gfsBucket;
+
 const connectDB = async () => {
   try {
     await mongoose.connect(process.env.MONGO_URI);
     console.log('✅ MongoDB connected');
 
-    const conn = mongoose.connection;
-    conn.once('open', () => {
-      const gfs = Grid(conn.db, mongoose.mongo);
-      gfs.collection('uploads');
-      app.locals.gfs = gfs;
-      console.log('✅ MongoDB + GridFS initialized');
+    const db = mongoose.connection.db;
+    gfsBucket = new mongoose.mongo.GridFSBucket(db, {
+      bucketName: 'uploads',
     });
+    app.locals.gfsBucket = gfsBucket;
+    console.log('✅ GridFSBucket initialized');
   } catch (error) {
     console.error('❌ MongoDB connection failed:', error.message);
     process.exit(1);
   }
 };
+
 connectDB();
 
 // -------------------- ROUTES --------------------
-// Require routes first
-const productRoutes = require('./routes/productRoutes');
+const productRoutes = require('./routes/products');
 const cartRoutes = require('./routes/cart');
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/user');
@@ -77,30 +73,14 @@ const adminUsers = require('./routes/adminUsers');
 const adminAuthRoutes = require('./routes/adminAuthRoutes');
 const admin = require('./routes/admin');
 
-
-// Image route for GridFS + fallback
-
-// -------------------- IMAGE SERVE --------------------
-// Global CORS headers for images
-app.use('/images', (req, res, next) => {
+// -------------------- IMAGE ROUTE --------------------
+app.use('/api/images', (req, res, next) => {
   res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
   res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Cross-Origin-Resource-Policy', 'cross-origin');
   next();
 });
-
-// Serve images through router
-// -------------------- IMAGE SERVE --------------------
-// Global CORS & COEP/CORP headers for images
-app.use('/api/images/', (req, res, next) => {
-  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Cross-Origin-Resource-Policy', 'cross-origin'); // ✅ allow cross-origin usage
-  next();
-});
-
-// Serve images through router (GridFS + fallback)
-app.use('/api/images/', imageRoutes); // mounted once
- // mounted once
+app.use('/api/images', imageRoutes);
 
 // -------------------- API ROUTES --------------------
 app.use('/api/products', productRoutes);
@@ -108,13 +88,14 @@ app.use('/api/cart', cartRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/orders', orderRoutes);
-app.use('/api/vendors',vendorsRoutes );
+app.use('/api/vendors', vendorsRoutes);
 app.use('/api/admin', adminAuthRoutes);
 app.use('/api/admin', adminUsers);
 app.use('/api/admin', admin);
 
 // -------------------- ROOT & ERROR --------------------
 app.get('/', (req, res) => res.send('🚀 API is running'));
+
 app.use((req, res) => res.status(404).json({ error: '❌ Route not found' }));
 app.use((err, req, res, next) => {
   console.error('❌ Server error:', err.stack || err.message || err);
