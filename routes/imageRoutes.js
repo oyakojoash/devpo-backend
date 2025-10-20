@@ -45,31 +45,53 @@ router.post('/upload', upload.single('image'), async (req, res) => {
   }
 });
 // -------------------- DOWNLOAD IMAGE --------------------
-router.get('/:filename', (req, res) => {
+router.get('/:filename', async (req, res) => {
   const { filename } = req.params;
   const gfs = req.app.locals.gfs;
   const fallback = path.join(__dirname, '../public/images/fallback.jpeg');
 
-  if (!gfs) {
-    const localPath = path.join(__dirname, '../public/images', filename);
-    return fs.existsSync(localPath)
-      ? res.sendFile(localPath)
-      : fs.existsSync(fallback)
-      ? res.sendFile(fallback)
-      : res.status(404).end();
-  }
-
-  const readStream = gfs.createReadStream({ filename });
-
-  readStream.on('error', () => {
+  // Helper for fallback logic
+  const sendFallback = () => {
     const localPath = path.join(__dirname, '../public/images', filename);
     if (fs.existsSync(localPath)) return res.sendFile(localPath);
     if (fs.existsSync(fallback)) return res.sendFile(fallback);
-    res.status(404).end();
-  });
+    return res.status(404).end();
+  };
 
-  res.set('Content-Type', 'application/octet-stream');
-  readStream.pipe(res);
+  // If GridFS not initialized, fallback immediately
+  if (!gfs) return sendFallback();
+
+  try {
+    // Check if file exists in GridFS first
+    const file = await gfs.files.findOne({ filename });
+    if (!file) return sendFallback();
+
+    // Set the correct MIME type
+    const contentType =
+      file.contentType ||
+      (filename.endsWith('.png')
+        ? 'image/png'
+        : filename.endsWith('.jpg') || filename.endsWith('.jpeg')
+        ? 'image/jpeg'
+        : filename.endsWith('.webp')
+        ? 'image/webp'
+        : 'application/octet-stream');
+
+    res.set('Content-Type', contentType);
+
+    const readStream = gfs.createReadStream({ filename });
+
+    // Handle stream errors
+    readStream.on('error', (err) => {
+      console.error('GridFS stream error:', err);
+      sendFallback();
+    });
+
+    // Stream file
+    readStream.pipe(res);
+  } catch (err) {
+    console.error('GridFS file fetch error:', err);
+    sendFallback();
+  }
 });
-
 module.exports = router;
