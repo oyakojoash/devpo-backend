@@ -27,7 +27,7 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin) return callback(null, true);
+    if (!origin) return callback(null, true); // allow tools like Postman
     if (allowedOrigins.includes(origin)) return callback(null, true);
     callback(new Error('❌ CORS not allowed'));
   },
@@ -73,11 +73,17 @@ const adminUsers = require('./routes/adminUsers');
 const adminAuthRoutes = require('./routes/adminAuthRoutes');
 const admin = require('./routes/admin');
 
-// -------------------- IMAGE ROUTE --------------------
+// -------------------- IMAGE ROUTE WITH PROPER CORS --------------------
 app.use('/api/images', (req, res, next) => {
-  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Cross-Origin-Resource-Policy', 'cross-origin');
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  } else {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+  }
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  res.setHeader('Cross-Origin-Embedder-Policy', 'credentialless');
   next();
 });
 app.use('/api/images', imageRoutes);
