@@ -5,13 +5,13 @@ const crypto = require('crypto');
 const path = require('path');
 const fs = require('fs');
 const { protectAdmin } = require('../middleware/protectAdmin');
-const Image = require('../models/Image');
 
 // -------------------- MULTER CONFIG --------------------
 const storage = multer.memoryStorage(); // store file in memory
 const upload = multer({ storage });
 
-router.post('/upload', upload.single('image'), async (req, res) => {
+// -------------------- UPLOAD IMAGE --------------------
+router.post('/upload', protectAdmin, upload.single('image'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ message: 'No file uploaded' });
 
@@ -23,75 +23,68 @@ router.post('/upload', upload.single('image'), async (req, res) => {
 
     const uploadStream = gfsBucket.openUploadStream(filename, {
       contentType: req.file.mimetype,
-    }); 
+    });
+
     uploadStream.end(req.file.buffer);
 
     uploadStream.on('finish', () => {
       res.status(201).json({
         message: 'Image uploaded successfully',
-        filename: filename,
+        filename,
         url: `/api/images/${filename}`,
       });
     });
 
     uploadStream.on('error', (err) => {
-      console.error(err);
+      console.error('GridFS upload error:', err);
       res.status(500).json({ message: 'Error uploading file' });
     });
 
   } catch (err) {
-    console.error(err);
+    console.error('Server error during upload:', err);
     res.status(500).json({ message: 'Server error' });
   }
 });
+
 // -------------------- DOWNLOAD IMAGE --------------------
-router.get("/api/images/:filename", async (req, res) => {
+router.get('/api/images/:filename', async (req, res) => {
   const { filename } = req.params;
-  const gfs = req.app.locals.gfs;
+  const gfsBucket = req.app.locals.gfsBucket;
   const fallback = path.join(__dirname, '../public/images/fallback.jpeg');
 
-  // Helper for fallback logic
   const sendFallback = () => {
     const localPath = path.join(__dirname, '../public/images', filename);
     if (fs.existsSync(localPath)) return res.sendFile(localPath);
     if (fs.existsSync(fallback)) return res.sendFile(fallback);
-    return res.status(404).end();
+    return res.status(404).json({ message: 'File not found' });
   };
 
-  // If GridFS not initialized, fallback immediately
-  if (!gfs) return sendFallback();
+  if (!gfsBucket) return sendFallback();
 
   try {
-    // Check if file exists in GridFS first
-    const file = await gfs.files.findOne({ filename });
-    if (!file) return sendFallback();
+    const downloadStream = gfsBucket.openDownloadStreamByName(filename);
 
-    // Set the correct MIME type
-    const contentType =
-      file.contentType ||
-      (filename.endsWith('.png')
-        ? 'image/png'
-        : filename.endsWith('.jpg') || filename.endsWith('.jpeg')
-        ? 'image/jpeg'
-        : filename.endsWith('.webp')
-        ? 'image/webp'
-        : 'application/octet-stream');
-
-    res.set('Content-Type', contentType);
-
-    const readStream = gfs.createReadStream({ filename });
-
-    // Handle stream errors
-    readStream.on('error', (err) => {
-      console.error('GridFS stream error:', err);
+    downloadStream.on('error', (err) => {
+      console.error('GridFS download error:', err);
       sendFallback();
     });
 
-    // Stream file
-    readStream.pipe(res);
+    // Set MIME type based on extension
+    const ext = path.extname(filename).toLowerCase();
+    const mimeTypes = {
+      '.png': 'image/png',
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.webp': 'image/webp',
+    };
+    res.set('Content-Type', mimeTypes[ext] || 'application/octet-stream');
+
+    downloadStream.pipe(res);
+
   } catch (err) {
-    console.error('GridFS file fetch error:', err);
+    console.error('Error fetching file from GridFS:', err);
     sendFallback();
   }
 });
+
 module.exports = router;
