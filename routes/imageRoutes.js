@@ -47,7 +47,7 @@ router.post('/upload', protectAdmin, upload.single('image'), async (req, res) =>
 });
 
 // -------------------- DOWNLOAD IMAGE --------------------
-router.get('/api/images/:filename', async (req, res) => {
+router.get('/:filename', async (req, res) => {
   const { filename } = req.params;
   const gfsBucket = req.app.locals.gfsBucket;
   const fallback = path.join(__dirname, '../public/images/fallback.jpeg');
