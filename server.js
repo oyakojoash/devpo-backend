@@ -27,19 +27,13 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin) return callback(null, true); // allow tools like Postman
+    if (!origin) return callback(null, true); // allow Postman or curl
     if (allowedOrigins.includes(origin)) return callback(null, true);
     callback(new Error('❌ CORS not allowed'));
   },
   credentials: true,
 }));
 
-const cors = require('cors');
-
-app.use(cors({
-  origin: 'https://dvepo.netlify.app', // frontend URL
-  credentials: true,                   // allow cookies/auth headers
-}));
 
 
 app.use(helmet());
