@@ -74,10 +74,6 @@ const adminAuthRoutes = require('./routes/adminAuthRoutes');
 const admin = require('./routes/admin');
 
 // -------------------- IMAGE ROUTE WITH PROPER CORS --------------------
-const path = require('path');
-
-// Serve static images (fallbacks, local uploads)
-app.use('/images', express.static(path.join(__dirname, 'public/images')));
 
 app.use('/api/images', (req, res, next) => {
   const origin = req.headers.origin;
