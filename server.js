@@ -34,6 +34,14 @@ app.use(cors({
   credentials: true,
 }));
 
+const cors = require('cors');
+
+app.use(cors({
+  origin: 'https://dvepo.netlify.app', // frontend URL
+  credentials: true,                   // allow cookies/auth headers
+}));
+
+
 app.use(helmet());
 app.use(morgan('dev'));
 app.use(express.json());
