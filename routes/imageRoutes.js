@@ -1,89 +1,65 @@
+// routes/upload.js
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
-const crypto = require('crypto');
-const path = require('path');
 const fs = require('fs');
+const path = require('path');
+const cloudinary = require('cloudinary').v2;
 const { protectAdmin } = require('../middleware/protectAdmin');
 
-// -------------------- MULTER CONFIG --------------------
-const storage = multer.memoryStorage(); // store file in memory
-const upload = multer({ storage });
+// -------------------- CLOUDINARY CONFIG --------------------
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
-// -------------------- UPLOAD IMAGE --------------------
+// -------------------- MULTER CONFIG --------------------
+// Store temporarily on disk before upload
+const upload = multer({ dest: 'uploads/' });
+
+// -------------------- UPLOAD IMAGE TO CLOUDINARY --------------------
 router.post('/upload', protectAdmin, upload.single('image'), async (req, res) => {
   try {
-    if (!req.file) return res.status(400).json({ message: 'No file uploaded' });
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
 
-    const gfsBucket = req.app.locals.gfsBucket;
-    if (!gfsBucket) return res.status(500).json({ message: 'GridFSBucket not initialized' });
-
-    // Generate random filename
-    const filename = crypto.randomBytes(16).toString('hex') + path.extname(req.file.originalname);
-
-    const uploadStream = gfsBucket.openUploadStream(filename, {
-      contentType: req.file.mimetype,
+    // Upload to Cloudinary
+    const result = await cloudinary.uploader.upload(req.file.path, {
+      folder: 'ecommerce_uploads', // optional folder name
+      resource_type: 'auto',       // supports images/videos
     });
 
-    uploadStream.end(req.file.buffer);
+    // Remove local temp file
+    fs.unlinkSync(req.file.path);
 
-    uploadStream.on('finish', () => {
-      res.status(201).json({
-        message: 'Image uploaded successfully',
-        filename,
-        url: `/api/images/${filename}`,
-      });
+    // Send Cloudinary response
+    res.status(201).json({
+      message: 'File uploaded successfully',
+      url: result.secure_url, // Save this URL in MongoDB
+      public_id: result.public_id, // Useful for deleting later if needed
     });
-
-    uploadStream.on('error', (err) => {
-      console.error('GridFS upload error:', err);
-      res.status(500).json({ message: 'Error uploading file' });
-    });
-
   } catch (err) {
-    console.error('Server error during upload:', err);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Cloudinary upload error:', err);
+    res.status(500).json({ message: 'Error uploading file' });
   }
 });
 
-// -------------------- DOWNLOAD IMAGE --------------------
-router.get('/:filename', async (req, res) => {
-  const { filename } = req.params;
-  const gfsBucket = req.app.locals.gfsBucket;
-  const fallback = path.join(__dirname, '../public/images/fallback.jpeg');
-
-  const sendFallback = () => {
-    const localPath = path.join(__dirname, '../public/images', filename);
-    if (fs.existsSync(localPath)) return res.sendFile(localPath);
-    if (fs.existsSync(fallback)) return res.sendFile(fallback);
-    return res.status(404).json({ message: 'File not found' });
-  };
-
-  if (!gfsBucket) return sendFallback();
-
+// -------------------- DELETE IMAGE FROM CLOUDINARY --------------------
+router.delete('/:public_id', protectAdmin, async (req, res) => {
   try {
-    const downloadStream = gfsBucket.openDownloadStreamByName(filename);
+    const { public_id } = req.params;
 
-    downloadStream.on('error', (err) => {
-      console.error('GridFS download error:', err);
-      sendFallback();
-    });
+    const result = await cloudinary.uploader.destroy(public_id);
+    if (result.result === 'not found') {
+      return res.status(404).json({ message: 'Image not found' });
+    }
 
-    // Set MIME type based on extension
-    const ext = path.extname(filename).toLowerCase();
-    const mimeTypes = {
-      '.png': 'image/png',
-      '.jpg': 'image/jpeg',
-      '.jpeg': 'image/jpeg',
-      '.webp': 'image/webp',
-    };
-    res.set('Content-Type', mimeTypes[ext] || 'application/octet-stream');
-
-    downloadStream.pipe(res);
-
+    res.json({ message: 'Image deleted successfully' });
   } catch (err) {
-    console.error('Error fetching file from GridFS:', err);
-    sendFallback();
+    console.error('Error deleting image from Cloudinary:', err);
+    res.status(500).json({ message: 'Server error during delete' });
   }
 });
 
