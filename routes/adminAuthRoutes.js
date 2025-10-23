@@ -12,6 +12,7 @@ const generateToken = (adminId) => {
 };
 
 // ✅ Admin Login
+// ✅ Admin Login
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
 
@@ -23,18 +24,21 @@ router.post('/login', async (req, res) => {
 
     const token = generateToken(admin._id);
 
-   res.clearCookie('Token', {
-  httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
-  sameSite: 'none',
-}).json({ message: 'Admin logged out' });
-
+    // ✅ Set cookie with the token
+    res.cookie('adminToken', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production', // true for HTTPS
+      sameSite: 'none', // required for cross-origin requests
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
 
     res.json({ message: 'Admin login successful' });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ message: 'Server error' });
   }
 });
+
 
 // ✅ Admin Logout
 router.post('/logout', (req, res) => {
