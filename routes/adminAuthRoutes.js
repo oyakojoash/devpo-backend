@@ -23,7 +23,7 @@ router.post('/login', async (req, res) => {
 
     const token = generateToken(admin._id);
 
-   res.clearCookie('adminToken', {
+   res.clearCookie('Token', {
   httpOnly: true,
   secure: process.env.NODE_ENV === 'production',
   sameSite: 'none',
@@ -38,7 +38,7 @@ router.post('/login', async (req, res) => {
 
 // ✅ Admin Logout
 router.post('/logout', (req, res) => {
-  res.clearCookie('adminToken').json({ message: 'Admin logged out' });
+  res.clearCookie('Token').json({ message: 'Admin logged out' });
 });
 
 module.exports = router;
