@@ -23,12 +23,12 @@ router.post('/login', async (req, res) => {
 
     const token = generateToken(admin._id);
 
-    res.cookie('adminToken', token, {
+   res.clearCookie('adminToken', {
   httpOnly: true,
-  secure: process.env.NODE_ENV === 'production', // must be true on HTTPS
-  sameSite: 'none', // allow cross-origin (Netlify → Railway)
-  maxAge: 7 * 24 * 60 * 60 * 1000,
-});
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'none',
+}).json({ message: 'Admin logged out' });
+
 
     res.json({ message: 'Admin login successful' });
   } catch (err) {
@@ -38,7 +38,7 @@ router.post('/login', async (req, res) => {
 
 // ✅ Admin Logout
 router.post('/logout', (req, res) => {
-  res.clearCookie('token').json({ message: 'Admin logged out' });
+  res.clearCookie('adminToken').json({ message: 'Admin logged out' });
 });
 
 module.exports = router;
