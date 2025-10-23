@@ -16,6 +16,12 @@ console.log('  - NODE_ENV:', process.env.NODE_ENV);
 console.log('  - PORT:', PORT);
 console.log('  - MONGO_URI:', process.env.MONGO_URI ? 'SET ✅' : 'MISSING ❌');
 console.log('  - JWT_SECRET:', process.env.JWT_SECRET ? 'SET ✅' : 'MISSING ❌');
+console.log('Cloudinary Config:', {
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
 
 // -------------------- MIDDLEWARE --------------------
 const allowedOrigins = [

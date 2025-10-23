@@ -1,65 +1,83 @@
-// routes/upload.js
+// routes/imageRoutes.js
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
-const fs = require('fs');
-const path = require('path');
-const cloudinary = require('cloudinary').v2;
+const mongoose = require('mongoose');
+const { GridFSBucket } = mongoose.mongo;
 const { protectAdmin } = require('../middleware/protectAdmin');
 
-// -------------------- CLOUDINARY CONFIG --------------------
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
-
 // -------------------- MULTER CONFIG --------------------
-// Store temporarily on disk before upload
-const upload = multer({ dest: 'uploads/' });
+// Store files temporarily in memory before saving to MongoDB
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
 
-// -------------------- UPLOAD IMAGE TO CLOUDINARY --------------------
+// -------------------- UPLOAD IMAGE TO GRIDFS --------------------
 router.post('/upload', protectAdmin, upload.single('image'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ message: 'No file uploaded' });
     }
 
-    // Upload to Cloudinary
-    const result = await cloudinary.uploader.upload(req.file.path, {
-      folder: 'ecommerce_uploads', // optional folder name
-      resource_type: 'auto',       // supports images/videos
+    const db = mongoose.connection.db;
+    const bucket = new GridFSBucket(db, {
+      bucketName: 'uploads', // This is the name of your GridFS bucket
     });
 
-    // Remove local temp file
-    fs.unlinkSync(req.file.path);
+    // Open a stream to store the file in GridFS
+    const uploadStream = bucket.openUploadStream(req.file.originalname);
+    uploadStream.end(req.file.buffer);
 
-    // Send Cloudinary response
-    res.status(201).json({
-      message: 'File uploaded successfully',
-      url: result.secure_url, // Save this URL in MongoDB
-      public_id: result.public_id, // Useful for deleting later if needed
+    // Use the callback from openUploadStream to get the file metadata
+    uploadStream.on('finish', (file) => {
+      console.log('File upload finished:', file); // Log the file metadata to inspect
+
+      // Ensure file metadata contains the _id
+      if (!file || !file._id) {
+        return res.status(500).json({ message: 'Failed to retrieve file metadata' });
+      }
+
+      res.status(201).json({
+        message: 'File uploaded successfully',
+        fileId: file._id,  // File ID will be useful for future retrieval or deletion
+        fileUrl: `/api/images/${file._id}`,  // You can create an endpoint to retrieve the file by ID
+      });
     });
+
+    uploadStream.on('error', (err) => {
+      console.error('Error uploading file to GridFS:', err);
+      res.status(500).json({ message: 'Error uploading file to GridFS' });
+    });
+
   } catch (err) {
-    console.error('Cloudinary upload error:', err);
-    res.status(500).json({ message: 'Error uploading file' });
+    console.error('Error:', err);
+    res.status(500).json({ message: 'Error processing file' });
   }
 });
 
-// -------------------- DELETE IMAGE FROM CLOUDINARY --------------------
-router.delete('/:public_id', protectAdmin, async (req, res) => {
+// -------------------- DELETE IMAGE FROM GRIDFS --------------------
+router.delete('/:fileId', protectAdmin, async (req, res) => {
   try {
-    const { public_id } = req.params;
+    const { fileId } = req.params;
 
-    const result = await cloudinary.uploader.destroy(public_id);
-    if (result.result === 'not found') {
-      return res.status(404).json({ message: 'Image not found' });
+    if (!mongoose.Types.ObjectId.isValid(fileId)) {
+      return res.status(400).json({ message: 'Invalid file ID' });
     }
 
-    res.json({ message: 'Image deleted successfully' });
+    const db = mongoose.connection.db;
+    const bucket = new GridFSBucket(db, {
+      bucketName: 'uploads',
+    });
+
+    bucket.delete(new mongoose.Types.ObjectId(fileId), (err) => {
+      if (err) {
+        console.error('Error deleting file from GridFS:', err);
+        return res.status(500).json({ message: 'Error deleting file from GridFS' });
+      }
+      res.json({ message: 'File deleted successfully' });
+    });
   } catch (err) {
-    console.error('Error deleting image from Cloudinary:', err);
-    res.status(500).json({ message: 'Server error during delete' });
+    console.error('Error deleting file:', err);
+    res.status(500).json({ message: 'Error processing deletion' });
   }
 });
 

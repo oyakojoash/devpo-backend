@@ -80,69 +80,82 @@ async function main() {
   // Define products array after images are fetched
   const updatedProducts = [
     {
-      name: "Wireless Mouse 1",
-      image: images[0].filename,
-      details: "A lightweight wireless mouse with ergonomic design, adjustable DPI, and 12-month battery life.",
-      price: 25.99,
-      vendorId: "vendor1",
-    },
-    {
-      name: "Keyboard 1",
-      image: images[1].filename,
-      details: "Compact mechanical keyboard with RGB backlighting and hot-swappable switches.",
-      price: 45.5,
-      vendorId: "vendor1",
-    },
-    {
-      name: "Monitor 1",
-      image: images[2].filename,
-      details: "27-inch Full HD IPS monitor with ultra-slim bezels and 75Hz refresh rate.",
-      price: 179.99,
-      vendorId: "vendor2",
-    },
-    {
-      name: "USB-C Hub 1",
-      image: images[3].filename,
-      details: "7-in-1 USB-C hub with HDMI output, SD card reader, and 100W power delivery support.",
-      price: 39.99,
-      vendorId: "vendor2",
-    },
-    {
-      name: "Laptop Stand 1",
-      image: images[4].filename,
-      details: "Adjustable aluminum laptop stand that improves posture and cooling airflow.",
-      price: 29.99,
-      vendorId: "vendor3",
-    },
-    {
-      name: "Webcam 1",
-      image: images[5].filename, // ✅ fixed img5.jpeg
-      details: "1080p HD webcam with built-in dual microphones and low-light correction.",
-      price: 55.0,
-      vendorId: "vendor3",
-    },
-    {
-      name: "Desk Lamp 1",
-      image: images[6]?.filename || images[0].filename, // fallback if not enough images
-      details: "LED desk lamp with touch control, brightness settings, and USB charging port.",
-      price: 22.5,
-      vendorId: "vendor1",
-    },
-    {
-      name: "Bluetooth Speaker 1",
-      image: images[7]?.filename || images[1].filename,
-      details: "Portable Bluetooth speaker with 10-hour playtime and deep bass sound.",
-      price: 49.99,
-      vendorId: "vendor2",
-    },
-    {
-      name: "Wireless Mouse 2",
-      image: images[0].filename,
-      details: "Second edition wireless mouse with upgraded optical sensor and silent buttons.",
-      price: 29.99,
-      vendorId: "vendor1",
-    },
+  name: "Beige sling bag",  
+  image: "Beige sling bag",
+  details: "A very good for outings.",
+  price: 950,
+  vendorId: "vendor1",
+},
+{
+  name: "Cute yellow bag",
+  image: "Cute yellow bag",
+  details: "make you stand out",
+  price: 1000,
+  vendorId: "vendor1",
+},
+{
+  name: "Cute maroon bag",
+  image: "Cute maroon bag",
+  details: "make you stand out",
+  price: 950,
+  vendorId: "vendor1",
+},
+{
+  name: "White shoulder bag",
+  image: "White shoulder bag",
+  details: "Elegant and simple for daily use.",
+  price: 950,
+  vendorId: "vendor1",
+},
+{
+  name: "Baby pink shoulder bag",
+  image: "Baby pink shoulder bag",
+  details: "Cute and stylish for every occasion.",
+  price: 950,
+  vendorId: "vendor1",
+},
+
+  {
+  name: "New HP 645 G5",
+  image: "New HP 645 G5",
+  details: "Ryzen 7 PRO\n2GB Dedicated Graphics\n8GB RAM\n256GB SSD\n8th Generation\n14 inches screen\nFHD Display\n2.7 GHz speed with TurboBoost Up to 5.0GHz\nBacklit keyboard\nPre-installed Windows 11 and Microsoft Office 2021\nComes with 1 Year warranty.\nCountrywide delivery available.",
+  price: 34000,
+  vendorId: "vendor2",
+},
+{
+  name: "HP Elitebook 840G3",
+  image: "HP Elitebook 840G3",
+  details: "Intel Core i7\n8GB RAM\n256GB SSD\n14 inches screen\nBacklit keyboard\nPre-installed Windows 11 and Microsoft Office 2021\nComes with 1 Year warranty.\nCountrywide delivery available.",
+  price: 32000,
+  vendorId: "vendor2",
+},
+{
+  name: "New HP ProBook 640 G5",
+  image: "New HP ProBook 640 G5",
+  details: "Intel Core i5\n8GB RAM\n256GB SSD\n8th Generation\n14 inches screen\nFHD Display\n2.7 GHz speed with TurboBoost Up to 5.0GHz\nBacklit keyboard\nPre-installed Windows 11 and Microsoft Office 2021\nComes with 1 Year warranty.",
+  price: 32000,
+  vendorId: "vendor2",
+},
+{
+  name: "New HP ProBook 11 G4",
+  image: "New HP ProBook 11 G4",
+  details: "Intel Core i5\n8th Generation\n8GB RAM\n256GB SSD\nX360 Touchscreen (2 in 1)\nPre-installed Windows 11 and Microsoft Office 2021\nComes with 1 Year warranty.",
+  price: 28000,
+  vendorId: "vendor2",
+},
+{
+  name: "HP ElitePad 1000 G2",
+  image: "HP ElitePad 1000 G2",
+  details: "Processor: Intel Atom CPU Z3795\nSpeed: 1.60 GHz\nMemory: 4GB RAM\nStorage: 64GB ROM (expandable via SD card)\nNetwork: Wi-Fi cellular\nComes with a Docking Station (4 USB ports, HDMI, VGA, Ethernet port, Jackpin, and Lock).",
+  price: 28000,
+  vendorId: "vendor2",
+}
+
+
+
+
   ];
+
 
   // Bulk insert / replace all
   await seedProducts(updatedProducts);
@@ -161,5 +174,4 @@ async function main() {
 
   process.exit(0);
 }
-
 main();
