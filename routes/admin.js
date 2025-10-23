@@ -13,35 +13,26 @@ const { registerAdmin } = require('../controllers/admincontroller');
 // -------------------- Middleware --------------------
 const protectAdmin = async (req, res, next) => {
   const token = req.cookies.adminToken;
-
-  if (!token) {
-    return res.status(401).json({ message: 'Admin not authenticated' });
-  }
+  if (!token) return res.status(401).json({ message: 'Admin not authenticated' });
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-    if (decoded.role !== 'admin') {
-      return res.status(403).json({ message: 'Invalid admin role' });
-    }
+    if (decoded.role !== 'admin') return res.status(403).json({ message: 'Invalid admin role' });
 
     const admin = await Admin.findById(decoded.id).select('-password');
-    if (!admin) {
-      return res.status(403).json({ message: 'Admin not found' });
-    }
+    if (!admin) return res.status(403).json({ message: 'Admin not found' });
 
     req.admin = admin;
     next();
   } catch (err) {
+    console.error('JWT verification failed:', err.message);
     return res.status(403).json({ message: 'Invalid or expired token' });
   }
 };
 
 // -------------------- Token Generator --------------------
 const generateToken = (adminId) => {
-  return jwt.sign({ id: adminId, role: 'admin' }, process.env.JWT_SECRET, {
-    expiresIn: '7d',
-  });
+  return jwt.sign({ id: adminId, role: 'admin' }, process.env.JWT_SECRET, { expiresIn: '7d' });
 };
 
 // -------------------- Admin Register --------------------
@@ -50,12 +41,12 @@ router.post('/register', registerAdmin);
 // -------------------- Admin Login --------------------
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
-
   try {
     const admin = await Admin.findOne({ email });
-    if (!admin || !(await bcrypt.compare(password, admin.password))) {
-      return res.status(400).json({ message: 'Invalid credentials' });
-    }
+    if (!admin) return res.status(400).json({ message: 'Invalid credentials' });
+
+    const isMatch = await bcrypt.compare(password, admin.password);
+    if (!isMatch) return res.status(400).json({ message: 'Invalid credentials' });
 
     const token = generateToken(admin._id);
 
@@ -68,7 +59,7 @@ router.post('/login', async (req, res) => {
 
     res.json({ message: 'Admin login successful' });
   } catch (err) {
-    console.error('Login error:', err.message);
+    console.error('Admin login error:', err);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -84,23 +75,21 @@ router.post('/logout', (req, res) => {
 });
 
 // -------------------- Check Admin Session --------------------
-router.get('/me', protectAdmin, (req, res) => {
-  res.json(req.admin);
-});
+router.get('/me', protectAdmin, (req, res) => res.json(req.admin));
 
 // -------------------- Admin Stats --------------------
 router.get('/stats', protectAdmin, async (req, res) => {
   try {
     const totalUsers = await User.countDocuments();
     const totalOrders = await Order.countDocuments();
-    const totalRevenueAgg = await Order.aggregate([{ $group: { _id: null, total: { $sum: "$totalPrice" } } }]);
     const totalProducts = await Product.countDocuments();
+    const totalRevenueAgg = await Order.aggregate([{ $group: { _id: null, total: { $sum: "$totalPrice" } } }]);
 
     res.json({
       totalUsers,
       totalOrders,
-      totalRevenue: totalRevenueAgg[0]?.total || 0,
       totalProducts,
+      totalRevenue: totalRevenueAgg[0]?.total || 0,
     });
   } catch (err) {
     console.error('Admin stats error:', err);
@@ -154,24 +143,17 @@ router.delete('/users/:id', protectAdmin, async (req, res) => {
 // -------------------- Orders --------------------
 router.get('/orders', protectAdmin, async (req, res) => {
   try {
-    const orders = await Order.find()
-      .populate('user', 'name email')
-      .sort({ createdAt: -1 });
-
+    const orders = await Order.find().populate('user', 'name email').sort({ createdAt: -1 });
     const formatted = orders.map(order => ({
       _id: order._id,
-      user: {
-        name: order.user?.name || 'Unknown',
-        email: order.user?.email || 'N/A'
-      },
+      user: { name: order.user?.name || 'Unknown', email: order.user?.email || 'N/A' },
       totalPrice: order.totalPrice || 0,
       status: order.status || 'pending',
-      createdAt: order.createdAt
+      createdAt: order.createdAt,
     }));
-
     res.json(formatted);
   } catch (err) {
-    console.error('Error fetching admin orders:', err);
+    console.error('Fetch orders failed:', err);
     res.status(500).json({ message: 'Failed to fetch orders' });
   }
 });
