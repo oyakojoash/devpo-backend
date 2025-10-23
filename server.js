@@ -72,8 +72,6 @@ const userRoutes = require('./routes/user');
 const orderRoutes = require('./routes/order');
 const vendorsRoutes = require('./routes/vendors');
 const imageRoutes = require('./routes/imageRoutes'); 
-const adminUsers = require('./routes/adminUsers');
-const adminAuthRoutes = require('./routes/adminAuthRoutes');
 const admin = require('./routes/admin');
 
 // -------------------- IMAGE ROUTE WITH PROPER CORS --------------------
@@ -99,8 +97,6 @@ app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/vendors', vendorsRoutes);
-app.use('/api/admin', adminAuthRoutes);
-app.use('/api/admin', adminUsers);
 app.use('/api/admin', admin);
 
 // -------------------- ROOT & ERROR --------------------
