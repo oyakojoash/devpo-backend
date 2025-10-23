@@ -20,6 +20,7 @@ console.log('  - JWT_SECRET:', process.env.JWT_SECRET ? 'SET ✅' : 'MISSING ❌
 // -------------------- MIDDLEWARE --------------------
 const allowedOrigins = [
   'https://dvepo.netlify.app',
+ " https://dvepoadmin.netlify.app",
   'https://devpo-frontend.onrender.com',
   'https://devpo1-frontend.onrender.com',
   'http://localhost:3000',

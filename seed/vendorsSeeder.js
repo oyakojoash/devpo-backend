@@ -17,23 +17,11 @@ mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/dvepo', {
 const vendors = [
   {
     id: 'vendor1',
-    name: 'TechWorld',
-    logo: 'vendors/techworld-logo.jpeg', // ✅ match actual image
+    name: 'Berry luxe bags',
+    logo: "berrylogo.jpeg", // ✅ match actual image
     description: 'Affordable tech gadgets and accessories.',
   },
-  {
-    id: 'vendor2',
-    name: 'GadgetHub',
-    logo: 'vendors/gadgethub-logo.png', // ✅ just file name, no /images/
-    description: 'Premium gaming and office gear.',
-  },
-  {
-    id: 'vendor3',
-    name: 'ProGear',
-    logo: 'vendors/progear-logo.png',
-    description: 'Professional office and productivity equipment.',
-  },
-];
+]
 
 async function seedVendors() {
   try {

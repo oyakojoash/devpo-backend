@@ -21,9 +21,7 @@ async function connectDB() {
 // ----------------------------------
 async function seedProducts(productsData) {
   try {
-    await Product.deleteMany();
-    console.log("🗑️ Existing products removed");
-
+  
     const inserted = await Product.insertMany(productsData);
     console.log(`✅ ${inserted.length} products added successfully`);
   } catch (err) {
