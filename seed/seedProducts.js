@@ -160,14 +160,7 @@ async function main() {
   // Bulk insert / replace all
   await seedProducts(updatedProducts);
 
-  // Example: single add/update
-  await upsertProduct({
-    name: "Wireless Headphones",
-    image: images[7]?.filename || images[0].filename,
-    details: "Over-ear Bluetooth headphones with 20-hour battery life.",
-    price: 59.99,
-    vendorId: "vendor1",
-  });
+
 
   // Example: remove a product
   // await removeProduct("Keyboard 1");

@@ -81,4 +81,40 @@ router.delete('/:fileId', protectAdmin, async (req, res) => {
   }
 });
 
+// -------------------- GET IMAGE FROM GRIDFS --------------------
+router.get('/:filename', async (req, res) => {
+  try {
+    const db = mongoose.connection.db;
+    const bucket = new GridFSBucket(db, {
+      bucketName: 'uploads',
+    });
+
+    // Find the file in GridFS
+    const files = await db.collection('uploads.files').find({ filename: req.params.filename }).toArray();
+
+    if (!files || files.length === 0) {
+      return res.status(404).json({ message: 'File not found' });
+    }
+
+    const file = files[0];
+
+    // Stream file contents to the client
+    res.set('Content-Type', file.contentType || 'application/octet-stream');
+
+    const downloadStream = bucket.openDownloadStreamByName(req.params.filename);
+
+    downloadStream.on('error', (err) => {
+      console.error('Error streaming file:', err);
+      res.status(500).json({ message: 'Error retrieving file' });
+    });
+
+    downloadStream.pipe(res);
+
+  } catch (err) {
+    console.error('Error retrieving image:', err);
+    res.status(500).json({ message: 'Error retrieving image' });
+  }
+});
+
+
 module.exports = router;
