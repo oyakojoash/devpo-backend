@@ -82,6 +82,7 @@ router.delete('/:fileId', protectAdmin, async (req, res) => {
 });
 
 // -------------------- GET IMAGE FROM GRIDFS --------------------
+// -------------------- GET IMAGE FROM GRIDFS --------------------
 router.get('/:filename', async (req, res) => {
   try {
     const db = mongoose.connection.db;
@@ -89,8 +90,14 @@ router.get('/:filename', async (req, res) => {
       bucketName: 'uploads',
     });
 
+    // ✅ Decode the filename to handle spaces and special characters
+    const decodedFilename = decodeURIComponent(req.params.filename);
+
     // Find the file in GridFS
-    const files = await db.collection('uploads.files').find({ filename: req.params.filename }).toArray();
+    const files = await db
+      .collection('uploads.files')
+      .find({ filename: decodedFilename })
+      .toArray();
 
     if (!files || files.length === 0) {
       return res.status(404).json({ message: 'File not found' });
@@ -101,7 +108,7 @@ router.get('/:filename', async (req, res) => {
     // Stream file contents to the client
     res.set('Content-Type', file.contentType || 'application/octet-stream');
 
-    const downloadStream = bucket.openDownloadStreamByName(req.params.filename);
+    const downloadStream = bucket.openDownloadStreamByName(decodedFilename);
 
     downloadStream.on('error', (err) => {
       console.error('Error streaming file:', err);
@@ -115,6 +122,7 @@ router.get('/:filename', async (req, res) => {
     res.status(500).json({ message: 'Error retrieving image' });
   }
 });
+
 
 
 module.exports = router;
