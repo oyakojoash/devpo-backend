@@ -4,53 +4,71 @@ const router = express.Router();
 const multer = require('multer');
 const mongoose = require('mongoose');
 const { GridFSBucket } = mongoose.mongo;
+const axios = require('axios');
+const cloudinary = require('../config/cloudinary'); // make sure this uses module.exports
 const { protectAdmin } = require('../middleware/protectAdmin');
 
 // -------------------- MULTER CONFIG --------------------
-// Store files temporarily in memory before saving to MongoDB
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
-// -------------------- UPLOAD IMAGE TO GRIDFS --------------------
+// -------------------- UPLOAD IMAGE TO CLOUDINARY + GRIDFS --------------------
 router.post('/upload', protectAdmin, upload.single('image'), async (req, res) => {
   try {
-    if (!req.file) {
-      return res.status(400).json({ message: 'No file uploaded' });
-    }
+    if (!req.file) return res.status(400).json({ message: 'No file uploaded' });
 
-    const db = mongoose.connection.db;
-    const bucket = new GridFSBucket(db, {
-      bucketName: 'uploads', // This is the name of your GridFS bucket
+    // 1️⃣ Upload to Cloudinary
+    const cloudResult = await new Promise((resolve, reject) => {
+      const uploadStream = cloudinary.uploader.upload_stream(
+        {
+          folder: 'website_uploads',
+          public_id: req.file.originalname,
+          resource_type: 'auto',
+        },
+        (error, result) => {
+          if (error) reject(error);
+          else resolve(result);
+        }
+      );
+      uploadStream.end(req.file.buffer);
     });
 
-    // Open a stream to store the file in GridFS
-    const uploadStream = bucket.openUploadStream(req.file.originalname);
-    uploadStream.end(req.file.buffer);
+    console.log('✅ Uploaded to Cloudinary:', cloudResult.secure_url);
 
-    // Use the callback from openUploadStream to get the file metadata
-    uploadStream.on('finish', (file) => {
-      console.log('File upload finished:', file); // Log the file metadata to inspect
+    // 2️⃣ Upload to GridFS
+    const db = mongoose.connection.db;
+    const bucket = new GridFSBucket(db, { bucketName: 'uploads' });
 
-      // Ensure file metadata contains the _id
-      if (!file || !file._id) {
-        return res.status(500).json({ message: 'Failed to retrieve file metadata' });
-      }
+    const gridUploadStream = bucket.openUploadStream(req.file.originalname, {
+      contentType: req.file.mimetype,
+    });
+    gridUploadStream.end(req.file.buffer);
 
-      res.status(201).json({
-        message: 'File uploaded successfully',
-        fileId: file._id,  // File ID will be useful for future retrieval or deletion
-        fileUrl: `/api/images/${file._id}`,  // You can create an endpoint to retrieve the file by ID
+    gridUploadStream.on('error', (err) => {
+      console.error('⚠️ GridFS backup failed:', err.message);
+    });
+
+    gridUploadStream.on('finish', (file) => {
+      console.log('✅ Backup stored in GridFS:', file.filename);
+
+      return res.status(201).json({
+        message: 'Upload successful',
+        primary: {
+          service: 'Cloudinary',
+          url: cloudResult.secure_url,
+          public_id: cloudResult.public_id,
+        },
+        backup: {
+          service: 'GridFS',
+          id: file._id,
+          filename: file.filename,
+          url: `/api/images/${file.filename}`,
+        },
       });
     });
-
-    uploadStream.on('error', (err) => {
-      console.error('Error uploading file to GridFS:', err);
-      res.status(500).json({ message: 'Error uploading file to GridFS' });
-    });
-
   } catch (err) {
-    console.error('Error:', err);
-    res.status(500).json({ message: 'Error processing file' });
+    console.error('❌ Error during upload:', err);
+    res.status(500).json({ message: 'Error processing upload', error: err.message });
   }
 });
 
@@ -58,15 +76,11 @@ router.post('/upload', protectAdmin, upload.single('image'), async (req, res) =>
 router.delete('/:fileId', protectAdmin, async (req, res) => {
   try {
     const { fileId } = req.params;
-
-    if (!mongoose.Types.ObjectId.isValid(fileId)) {
+    if (!mongoose.Types.ObjectId.isValid(fileId))
       return res.status(400).json({ message: 'Invalid file ID' });
-    }
 
     const db = mongoose.connection.db;
-    const bucket = new GridFSBucket(db, {
-      bucketName: 'uploads',
-    });
+    const bucket = new GridFSBucket(db, { bucketName: 'uploads' });
 
     bucket.delete(new mongoose.Types.ObjectId(fileId), (err) => {
       if (err) {
@@ -81,48 +95,59 @@ router.delete('/:fileId', protectAdmin, async (req, res) => {
   }
 });
 
-// -------------------- GET IMAGE FROM GRIDFS --------------------
-// -------------------- GET IMAGE FROM GRIDFS --------------------
-router.get('/:filename', async (req, res) => {
+// -------------------- GET IMAGE --------------------
+
+
+// ✅ GET /api/images/:filename
+router.get("/:filename", async (req, res) => {
+  const { filename } = req.params;
+
   try {
+    // 1️⃣ Build the Cloudinary URL safely
+    const folder = process.env.CLOUDINARY_FOLDER || "website_seed"; // your folder
+    const encodedFilename = encodeURIComponent(filename); // handles spaces/symbols
+    const cloudinaryUrl = `https://res.cloudinary.com/${process.env.CLOUDINARY_CLOUD_NAME}/image/upload/${folder}/${encodedFilename}`;
+
+    // 2️⃣ Try to fetch from Cloudinary first
+    try {
+      const response = await axios.get(cloudinaryUrl, { responseType: "stream" });
+      res.set("Content-Type", response.headers["content-type"]);
+      response.data.pipe(res);
+      return; // ✅ done — served from Cloudinary
+    } catch (cloudErr) {
+      console.warn(`⚠️ Cloudinary failed for ${filename}, falling back to GridFS`);
+    }
+
+    // 3️⃣ Fallback to GridFS (backup)
     const db = mongoose.connection.db;
-    const bucket = new GridFSBucket(db, {
-      bucketName: 'uploads',
-    });
+    const bucket = new GridFSBucket(db, { bucketName: "uploads" });
 
-    // ✅ Decode the filename to handle spaces and special characters
-    const decodedFilename = decodeURIComponent(req.params.filename);
-
-    // Find the file in GridFS
-    const files = await db
-      .collection('uploads.files')
-      .find({ filename: decodedFilename })
-      .toArray();
+    const files = await db.collection("uploads.files").find({ filename }).toArray();
 
     if (!files || files.length === 0) {
-      return res.status(404).json({ message: 'File not found' });
+      return res.status(404).json({
+        message: "File not found in Cloudinary or GridFS",
+      });
     }
 
     const file = files[0];
+    res.set("Content-Type", file.contentType || "application/octet-stream");
 
-    // Stream file contents to the client
-    res.set('Content-Type', file.contentType || 'application/octet-stream');
-
-    const downloadStream = bucket.openDownloadStreamByName(decodedFilename);
-
-    downloadStream.on('error', (err) => {
-      console.error('Error streaming file:', err);
-      res.status(500).json({ message: 'Error retrieving file' });
+    const downloadStream = bucket.openDownloadStreamByName(filename);
+    downloadStream.on("error", (err) => {
+      console.error("GridFS stream error:", err);
+      res.status(500).json({ message: "Error retrieving file from backup" });
     });
 
     downloadStream.pipe(res);
-
   } catch (err) {
-    console.error('Error retrieving image:', err);
-    res.status(500).json({ message: 'Error retrieving image' });
+    console.error("Unexpected error:", err);
+    res.status(500).json({ message: "Error retrieving image" });
   }
 });
 
+module.exports = router;
 
 
+// ✅ Export router (CommonJS)
 module.exports = router;
