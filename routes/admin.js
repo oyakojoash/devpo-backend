@@ -158,4 +158,74 @@ router.get('/orders', protectAdmin, async (req, res) => {
   }
 });
 
+router.get('/orders/:id', protectAdmin, async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id)
+      .populate('user', 'name email ')
+      .populate('products.productId', 'name price image');
+
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    res.json(order);
+  } catch (err) {
+    console.error('Fetch single order failed:', err);
+    res.status(500).json({ message: 'Failed to fetch order' });
+  }
+});
+ // backend/routes/admin.js
+
+// Update order status
+router.put('/orders/:id/status', protectAdmin, async (req, res) => {
+  const { status } = req.body; // e.g., { status: 'shipped' }
+
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: 'Order not found' });
+
+    order.status = status;
+    await order.save();
+
+    res.json({ message: 'Order status updated', order });
+  } catch (err) {
+    console.error('Update order status failed:', err);
+    res.status(500).json({ message: 'Failed to update order status' });
+  }
+});
+// Update order status
+router.patch('/orders/:id/status', protectAdmin, async (req, res) => {
+  const { status } = req.body; // e.g., { status: 'shipped' }
+
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: 'Order not found' });
+
+    // Validate status
+    const allowedStatuses = ['pending', 'processing', 'shipped', 'delivered', 'cancelled'];
+    if (!allowedStatuses.includes(status)) {
+      return res.status(400).json({ message: 'Invalid status value' });
+    }
+
+    order.status = status;
+    await order.save();
+
+    res.json({ message: 'Order status updated', order });
+  } catch (err) {
+    console.error('Update order status failed:', err);
+    res.status(500).json({ message: 'Failed to update order status' });
+  }
+});
+  
+router.delete('/orders/:id', protectAdmin, async (req, res) => {
+  try {
+    const order = await Order.findByIdAndDelete(req.params.id);
+    if (!order) return res.status(404).json({ message: 'Order not found' });
+    res.json({ message: 'Order deleted successfully' });
+  } catch (err) {
+    console.error('Delete order failed:', err);
+    res.status(500).json({ message: 'Failed to delete order' });
+  }
+});
+
 module.exports = router;

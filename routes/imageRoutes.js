@@ -48,24 +48,27 @@ router.post('/upload', protectAdmin, upload.single('image'), async (req, res) =>
       console.error('⚠️ GridFS backup failed:', err.message);
     });
 
-    gridUploadStream.on('finish', (file) => {
-      console.log('✅ Backup stored in GridFS:', file.filename);
+   gridUploadStream.on('finish', () => {
+  console.log('✅ Backup stored in GridFS:', req.file.originalname);
 
-      return res.status(201).json({
-        message: 'Upload successful',
-        primary: {
-          service: 'Cloudinary',
-          url: cloudResult.secure_url,
-          public_id: cloudResult.public_id,
-        },
-        backup: {
-          service: 'GridFS',
-          id: file._id,
-          filename: file.filename,
-          url: `/api/images/${file.filename}`,
-        },
-      });
-    });
+  return res.status(201).json({
+    message: 'Upload successful',
+    filename: req.file.originalname,
+
+    primary: {
+      service: 'Cloudinary',
+      url: cloudResult.secure_url,
+      public_id: cloudResult.public_id,
+    },
+    backup: {
+      service: 'GridFS',
+      id: gridUploadStream.id,
+      filename: req.file.originalname,
+      url: `/api/images/${req.file.originalname}`,
+    },
+  });
+});
+
   } catch (err) {
     console.error('❌ Error during upload:', err);
     res.status(500).json({ message: 'Error processing upload', error: err.message });

@@ -3,6 +3,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const { protect } = require('../middleware/auth');
+const nodemailer = require('nodemailer');
 
 const router = express.Router();
 
@@ -18,6 +19,44 @@ res.cookie('token', token, {
 
 };
 
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.EMAIL_USER, // your email
+    pass: process.env.EMAIL_PASS, // app password or real password
+  },
+});
+
+async function sendResetEmail(to, code) {
+  await transporter.sendMail({
+    from: `"MyApp Support" <${process.env.EMAIL_USER}>`,
+    to,
+    subject: 'Your Password Reset Code',
+    text: `Your password reset code is: ${code}. It expires in 15 minutes.`,
+  });
+}
+async function sendWelcomeEmail(to, fullName) {
+  const subject = '🎉 Welcome to Our Platform!';
+  const text = `Hi ${fullName || 'there'},\n\nWelcome to our community! We're thrilled to have you here.\n\nYou can now log in and explore your account.\n\nBest regards,\nThe Support Team`;
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; background:#f9f9f9; padding:20px; border-radius:10px;">
+      <h2 style="color:#007bff;">Welcome, ${fullName || 'Friend'} 🎉</h2>
+      <p>We’re thrilled to have you join our platform. You can now log in and start exploring!</p>
+      <p style="margin-top:20px;">With love, <br><b>The Support Team</b></p>
+    </div>
+  `;
+
+  await transporter.sendMail({
+    from: `"Support Team" <${process.env.EMAIL_USER}>`,
+    to,
+    subject,
+    text,
+    html,
+  });
+}
+
+
 // ------------------- REGISTER -------------------
 router.post('/register', async (req, res) => {
   const { fullName, email, password, phone } = req.body;
@@ -29,6 +68,10 @@ router.post('/register', async (req, res) => {
     const hash = await bcrypt.hash(password, 10);
     const user = new User({ fullName, email, password: hash, phone });
     await user.save();
+    
+    sendWelcomeEmail(user.email, user.fullName).catch((err) =>
+      console.error('Email send error:', err)
+    );
 
     res.status(201).json({ message: '✅ Registered successfully' });
   } catch (err) {
@@ -74,7 +117,7 @@ router.post('/logout', (req, res) => {
 router.post('/forgot-password', async (req, res) => {
   const { email } = req.body;
   try {
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email: email.toLowerCase() });
     if (!user) return res.status(404).json({ message: '❌ User not found' });
 
     const code = Math.floor(100000 + Math.random() * 900000).toString();
@@ -82,13 +125,15 @@ router.post('/forgot-password', async (req, res) => {
     user.resetCodeExpiry = Date.now() + 15 * 60 * 1000; // 15 mins
     await user.save();
 
-    console.log(`🔐 Reset code for ${email}: ${code}`);
-    res.json({ message: '✅ Reset code sent to your email or phone' });
+    await sendResetEmail(email, code); // ✅ send code via email
+
+    res.json({ message: '✅ Reset code sent to your email' });
   } catch (err) {
     console.error('Forgot password error:', err);
     res.status(500).json({ message: 'Server error during code sending' });
   }
 });
+
 
 // ------------------- RESET PASSWORD -------------------
 router.post('/reset-password', async (req, res) => {
