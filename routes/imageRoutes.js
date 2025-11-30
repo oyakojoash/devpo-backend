@@ -103,15 +103,18 @@ router.delete('/:fileId', protectAdmin, async (req, res) => {
 
 // ✅ GET /api/images/:filename
 router.get("/:filename", async (req, res) => {
-  const { filename } = req.params;
+  let { filename } = req.params;
 
   try {
-    // 1️⃣ Build the Cloudinary URL safely
-    const folder = process.env.CLOUDINARY_FOLDER || "website_seed"; // your folder
-    const encodedFilename = encodeURIComponent(filename); // handles spaces/symbols
-    const cloudinaryUrl = `https://res.cloudinary.com/${process.env.CLOUDINARY_CLOUD_NAME}/image/upload/${folder}/${encodedFilename}`;
+    // Convert .jpeg to .jpg and encode spaces/special characters
+    const safeFilename = encodeURIComponent(filename.trim().replace(/\.jpeg$/i, ".jpg"));
 
-    // 2️⃣ Try to fetch from Cloudinary first
+    // Build the Cloudinary URL
+    const folder = process.env.CLOUDINARY_FOLDER || "website_seed";
+    const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+    const cloudinaryUrl = `https://res.cloudinary.com/${cloudName}/image/upload/${folder}/${safeFilename}`;
+
+    // Try fetching from Cloudinary first
     try {
       const response = await axios.get(cloudinaryUrl, { responseType: "stream" });
       res.set("Content-Type", response.headers["content-type"]);
@@ -121,16 +124,13 @@ router.get("/:filename", async (req, res) => {
       console.warn(`⚠️ Cloudinary failed for ${filename}, falling back to GridFS`);
     }
 
-    // 3️⃣ Fallback to GridFS (backup)
+    // Fallback to GridFS
     const db = mongoose.connection.db;
     const bucket = new GridFSBucket(db, { bucketName: "uploads" });
 
     const files = await db.collection("uploads.files").find({ filename }).toArray();
-
     if (!files || files.length === 0) {
-      return res.status(404).json({
-        message: "File not found in Cloudinary or GridFS",
-      });
+      return res.status(404).json({ message: "File not found in Cloudinary or GridFS" });
     }
 
     const file = files[0];
@@ -148,6 +148,7 @@ router.get("/:filename", async (req, res) => {
     res.status(500).json({ message: "Error retrieving image" });
   }
 });
+
 
 module.exports = router;
 

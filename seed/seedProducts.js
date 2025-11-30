@@ -33,82 +33,82 @@ async function main() {
 
   // Define products array
   const updatedProducts = [
-    {
-      name: "Beige sling bag",
-      image: "Beige sling bag.jpeg",
-      description: "A very good for outings.",
-      price: 950,
-      vendorId: "vendor1",
-    },
-    {
-      name: "Cute yellow bag",
-      image: "Cute yellow bag.jpeg",
-      description: "Make you stand out.",
-      price: 1000,
-      vendorId: "vendor1",
-    },
-    {
-      name: "Cute maroon bag",
-      image: "Cute maroon bag.jpeg",
-      description: "Make you stand out.",
-      price: 950,
-      vendorId: "vendor1",
-    },
-    {
-      name: "White shoulder bag",
-      image: "White shoulder bag.jpeg",
-      description: "Elegant and simple for daily use.",
-      price: 950,
-      vendorId: "vendor1",
-    },
-    {
-      name: "Baby pink shoulder bag",
-      image: "Baby pink shoulder bag.jpeg",
-      description: "Cute and stylish for every occasion.",
-      price: 950,
-      vendorId: "vendor1",
-    },
-    {
-      name: "New HP 645 G5",
-      image: "New HP 645 G5.jpeg",
-      description:
-        "Ryzen 7 PRO\n2GB Dedicated Graphics\n8GB RAM\n256GB SSD\n8th Generation\n14 inches screen\nFHD Display\n2.7 GHz speed with TurboBoost Up to 5.0GHz\nBacklit keyboard\nPre-installed Windows 11 and Microsoft Office 2021\nComes with 1 Year warranty.\nCountrywide delivery available.",
-      price: 34000,
-      vendorId: "vendor2",
-    },
-    {
-      name: "HP Elitebook 840G3",
-      image: "HP Elitebook 840G3.jpeg",
-      description:
-        "Intel Core i7\n8GB RAM\n256GB SSD\n14 inches screen\nBacklit keyboard\nPre-installed Windows 11 and Microsoft Office 2021\nComes with 1 Year warranty.\nCountrywide delivery available.",
-      price: 32000,
-      vendorId: "vendor2",
-    },
-    {
-      name: "New HP ProBook 640 G5",
-      image: "New HP ProBook 640 G5.jpeg",
-      description:
-        "Intel Core i5\n8GB RAM\n256GB SSD\n8th Generation\n14 inches screen\nFHD Display\n2.7 GHz speed with TurboBoost Up to 5.0GHz\nBacklit keyboard\nPre-installed Windows 11 and Microsoft Office 2021\nComes with 1 Year warranty.",
-      price: 32000,
-      vendorId: "vendor2",
-    },
-    {
-      name: "New HP ProBook 11 G4",
-      image: "New HP ProBook 11 G4.jpeg",
-      description:
-        "Intel Core i5\n8th Generation\n8GB RAM\n256GB SSD\nX360 Touchscreen (2 in 1)\nPre-installed Windows 11 and Microsoft Office 2021\nComes with 1 Year warranty.",
-      price: 28000,
-      vendorId: "vendor2",
-    },
-    {
-      name: "HP ElitePad 1000 G2",
-      image: "HP ElitePad 1000 G2.jpeg",
-      description:
-        "Processor: Intel Atom CPU Z3795\nSpeed: 1.60 GHz\nMemory: 4GB RAM\nStorage: 64GB ROM (expandable via SD card)\nNetwork: Wi-Fi cellular\nComes with a Docking Station (4 USB ports, HDMI, VGA, Ethernet port, Jackpin, and Lock).",
-      price: 28000,
-      vendorId: "vendor2",
-    },
-  ];
+  {
+    name: "Beige sling bag",
+    image: "Beige sling bag.jpg",
+    description: "A very good for outings.",
+    price: 950,
+    vendorId: "vendor1",
+  },
+  {
+    name: "Cute yellow bag",
+    image: "Cute yellow bag.jpg",
+    description: "Make you stand out.",
+    price: 1000,
+    vendorId: "vendor1",
+  },
+  {
+    name: "Cute maroon bag",
+    image: "Cute maroon bag.jpg",
+    description: "Make you stand out.",
+    price: 950,
+    vendorId: "vendor1",
+  },
+  {
+    name: "White shoulder bag",
+    image: "White shoulder bag.jpg",
+    description: "Elegant and simple for daily use.",
+    price: 950,
+    vendorId: "vendor1",
+  },
+  {
+    name: "Baby pink shoulder bag",
+    image: "Baby pink shoulder bag.jpg",
+    description: "Cute and stylish for every occasion.",
+    price: 950,
+    vendorId: "vendor1",
+  },
+  {
+    name: "New HP 645 G5",
+    image: "New HP 645 G5.jpg",
+    description:
+      "Ryzen 7 PRO\n2GB Dedicated Graphics\n8GB RAM\n256GB SSD\n8th Generation\n14 inches screen\nFHD Display\n2.7 GHz speed with TurboBoost Up to 5.0GHz\nBacklit keyboard\nPre-installed Windows 11 and Microsoft Office 2021\nComes with 1 Year warranty.\nCountrywide delivery available.",
+    price: 34000,
+    vendorId: "vendor2",
+  },
+  {
+    name: "HP Elitebook 840G3",
+    image: "HP Elitebook 840G3.jpg",
+    description:
+      "Intel Core i7\n8GB RAM\n256GB SSD\n14 inches screen\nBacklit keyboard\nPre-installed Windows 11 and Microsoft Office 2021\nComes with 1 Year warranty.\nCountrywide delivery available.",
+    price: 32000,
+    vendorId: "vendor2",
+  },
+  {
+    name: "New HP ProBook 640 G5",
+    image: "New HP ProBook 640 G5.jpg",
+    description:
+      "Intel Core i5\n8GB RAM\n256GB SSD\n8th Generation\n14 inches screen\nFHD Display\n2.7 GHz speed with TurboBoost Up to 5.0GHz\nBacklit keyboard\nPre-installed Windows 11 and Microsoft Office 2021\nComes with 1 Year warranty.",
+    price: 32000,
+    vendorId: "vendor2",
+  },
+  {
+    name: "New HP ProBook 11 G4",
+    image: "New HP ProBook 11 G4.jpg",
+    description:
+      "Intel Core i5\n8th Generation\n8GB RAM\n256GB SSD\nX360 Touchscreen (2 in 1)\nPre-installed Windows 11 and Microsoft Office 2021\nComes with 1 Year warranty.",
+    price: 28000,
+    vendorId: "vendor2",
+  },
+  {
+    name: "HP ElitePad 1000 G2",
+    image: "HP ElitePad 1000 G2.jpg",
+    description:
+      "Processor: Intel Atom CPU Z3795\nSpeed: 1.60 GHz\nMemory: 4GB RAM\nStorage: 64GB ROM (expandable via SD card)\nNetwork: Wi-Fi cellular\nComes with a Docking Station (4 USB ports, HDMI, VGA, Ethernet port, Jackpin, and Lock).",
+    price: 28000,
+    vendorId: "vendor2",
+  },
+];
 
   // Bulk insert / replace
   await seedProducts(updatedProducts);
