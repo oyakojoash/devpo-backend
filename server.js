@@ -25,6 +25,7 @@ console.log('Cloudinary Config:', {
 
 // -------------------- MIDDLEWARE --------------------
 const allowedOrigins = [
+  "https://dvepo.com",
   "https://dvepo.netlify.app",
   "https://dvepoadmin.netlify.app",
   "https://devpo-frontend.onrender.com",
