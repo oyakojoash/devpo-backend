@@ -12,7 +12,7 @@ const PORT = process.env.PORT || 10000;
 
 // -------------------- DEBUG ENV --------------------
 console.log('🔍 Environment Debug:');
-console.log('  - NODE_ENV:', process.env.NODE_ENV);
+console.log('  - NODE_ENV:', process.env.NODE_ENV);~
 console.log('  - PORT:', PORT);
 console.log('  - MONGO_URI:', process.env.MONGO_URI ? 'SET ✅' : 'MISSING ❌');
 console.log('  - JWT_SECRET:', process.env.JWT_SECRET ? 'SET ✅' : 'MISSING ❌');
@@ -32,7 +32,6 @@ const allowedOrigins = [
   "https://devpo1-frontend.onrender.com",
   "http://localhost:3000",
 ];
-
 app.use(cors({
   origin: (origin, callback) => {
     if (!origin) return callback(null, true); // allow Postman or curl
