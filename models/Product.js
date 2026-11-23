@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { getProductImageUrl } = require('../utils/imageStorage');
 
 const productSchema = new mongoose.Schema(
   {
@@ -31,10 +32,10 @@ const productSchema = new mongoose.Schema(
 
 // Optional: add full image URL as a virtual field
 productSchema.virtual('imageUrl').get(function () {
-  const base = process.env.BACKEND_URL || '';
-  return this.image ? `${base}/images/${this.image}` : null;
+  return getProductImageUrl(this.image, process.env.BACKEND_URL || '');
 });
 
+productSchema.index({ vendorId: 1 });
 const Product = mongoose.model('Product', productSchema);
 
 module.exports = Product;

@@ -1,3 +1,4 @@
+
 const mongoose = require('mongoose');
 
 const orderSchema = new mongoose.Schema({
@@ -6,11 +7,13 @@ const orderSchema = new mongoose.Schema({
     ref: 'User',
     required: true,
   },
-  userInfo: {  // <-- new field to store snapshot of contact info
+
+  userInfo: {
     name: { type: String, required: false },
     email: { type: String },
     phone: { type: String },
   },
+
   products: [
     {
       productId: {
@@ -21,25 +24,120 @@ const orderSchema = new mongoose.Schema({
       name: { type: String, required: true },
       price: { type: Number, required: true },
       quantity: { type: Number, required: true },
+      sourceType: {
+        type: String,
+        enum: ['product', 'merchantProduct'],
+        default: 'product',
+      },
+      ownerType: {
+        type: String,
+        enum: ['vendor', 'merchant'],
+        default: 'vendor',
+      },
+      ownerId: mongoose.Schema.Types.ObjectId,
+      ownerStoreId: String,
+      image: String,
+      currency: { type: String, default: 'KES' },
+      stockRestored: { type: Boolean, default: false },
     },
   ],
-  totalPrice: {  
+
+  totalPrice: {
     type: Number,
     required: true,
   },
+
   status: {
     type: String,
-    enum: ['pending', 'processing', 'shipped', 'delivered', 'cancelled'],
+    enum: [
+      'pending',
+      'accepted',
+      'processing',
+      'shipped',
+      'dispatched',
+      'delivered',
+      'cancelled',
+      'rejected',
+    ],
     default: 'pending',
   },
-  /*shippingAddress: {
-    street: { type: String, required: true },
-    city: { type: String, required: true },
-    country: { type: String, required: true },
-    postalCode: { type: String, required: true }, 
-  },*/
-},{
+
+  merchantGroups: [{
+    merchant: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Merchant',
+      required: true,
+    },
+    productIndexes: [Number],
+    status: {
+      type: String,
+      enum: [
+        'pending',
+        'accepted',
+        'rejected',
+        'processing',
+        'dispatched',
+        'delivered',
+        'cancelled',
+      ],
+      default: 'pending',
+    },
+    rejectionReason: String,
+    paymentInstruction: { type: String, maxlength: 2000 },
+    paymentLink: { type: String, maxlength: 2048 },
+    paymentSentAt: Date,
+    paymentReceivedAt: Date,
+    paymentConfirmedAt: Date,
+  }],
+
+  statusHistory: [{
+    status: String,
+    actorType: {
+      type: String,
+      enum: ['admin', 'merchant', 'customer', 'system'],
+    },
+    actorId: mongoose.Schema.Types.ObjectId,
+    changedAt: { type: Date, default: Date.now },
+  }],
+
+  vendorGroups: [{
+    vendor: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Vendor',
+    },
+    vendorId: String,
+    productIndexes: [Number],
+  }],
+
+  idempotencyKey: { type: String, select: false },
+  idempotencyFingerprint: { type: String, select: false },
+
+  shippingAddress: {
+    recipient: { type: String },
+    phone: { type: String },
+    county: { type: String },
+    town: { type: String },
+    area: { type: String },
+    building: { type: String },
+    instructions: { type: String },
+  },
+}, {
   timestamps: true,
+  autoIndex: false,
+  autoCreate: false,
 });
 
-module.exports = mongoose.models.Order || mongoose.model('Order', orderSchema);
+orderSchema.index({ user: 1, createdAt: -1 });
+
+orderSchema.index(
+  { user: 1, idempotencyKey: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      idempotencyKey: { $type: 'string' },
+    },
+  }
+);
+
+module.exports =
+  mongoose.models.Order || mongoose.model('Order', orderSchema);

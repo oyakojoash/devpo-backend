@@ -1,53 +1,28 @@
-// C:\Users\hp\Desktop\memo\proto1\backend\seeder\adminseeder.js
+require('dotenv').config();
+const mongoose = require('mongoose');
+const Admin = require('../models/adminmodels');
 
-const mongoose = require("mongoose");
-const bcrypt = require("bcrypt");
-const dotenv = require("dotenv");
-const path = require("path");
-
-// ✅ Use Admin model instead of User
-const Admin = require(path.join(__dirname, "..", "models", "adminmodels"));
-
-dotenv.config();
-
-// ✅ Connect to MongoDB
-mongoose
-  .connect(process.env.MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
-  .then(() => console.log("✅ MongoDB connected"))
-  .catch((err) => {
-    console.error("❌ Connection error:", err.message);
-    process.exit(1);
-  });
-
-const seedAdmin = async () => {
-  try {
-    // Optional: Wipe all existing admins (⚠️ only in dev/test)
-    // await Admin.deleteMany();
-
-    const existing = await Admin.findOne({ email: "admin@example.com" });
-    if (existing) {
-      console.log("⚠️ Admin already exists. Skipping...");
-      return process.exit(0);
-    }
-
-    const hashedPassword = await bcrypt.hash("admin123", 10);
-
-    const admin = new Admin({
-      fullName: "Super Admin",
-      email: "admin@example.com",
-      password: hashedPassword,
-    });
-
-    await admin.save();
-    console.log("✅ Admin created: admin@example.com / admin123");
-    process.exit(0);
-  } catch (err) {
-    console.error("❌ Admin seeding failed:", err.message);
-    process.exit(1);
+async function seedAdmin() {
+  const { MONGO_URI, ADMIN_EMAIL, ADMIN_PASSWORD, ADMIN_NAME } = process.env;
+  if (!MONGO_URI || !ADMIN_EMAIL || !ADMIN_PASSWORD || !ADMIN_NAME) {
+    throw new Error('Set MONGO_URI, ADMIN_EMAIL, ADMIN_PASSWORD, and ADMIN_NAME before running the admin seeder');
   }
-};
+  if (ADMIN_PASSWORD.length < 12) throw new Error('ADMIN_PASSWORD must be at least 12 characters');
 
-seedAdmin();
+  await mongoose.connect(MONGO_URI);
+  const email = ADMIN_EMAIL.trim().toLowerCase();
+  const existing = await Admin.findOne({ email });
+  if (existing) {
+    console.log('Admin already exists; no changes made.');
+    return;
+  }
+  await Admin.create({ fullName: ADMIN_NAME.trim(), email, password: ADMIN_PASSWORD });
+  console.log(`Admin created for ${email}.`);
+}
+
+seedAdmin().catch((error) => {
+  console.error('Admin seeding failed:', error.message);
+  process.exitCode = 1;
+}).finally(async () => {
+  await mongoose.disconnect();
+});

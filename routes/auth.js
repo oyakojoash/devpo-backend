@@ -1,172 +1,149 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
+const rateLimit = require('express-rate-limit');
 const User = require('../models/User');
 const { protect } = require('../middleware/auth');
+const { body, validationResult } = require('express-validator');
 const nodemailer = require('nodemailer');
+const emailService = require('../services/emailService');
 
 const router = express.Router();
-
-// ✅ Helper to set cookie safely on Render
-const setTokenCookie = (res, token) => {
-  // Backend cookie settings
-res.cookie('token', token, {
+const loginLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 10, standardHeaders: true, legacyHeaders: false });
+const recoveryLimiter = rateLimit({ windowMs: 60 * 60 * 1000, limit: 5, standardHeaders: true, legacyHeaders: false });
+const registrationLimiter = rateLimit({ windowMs: 60 * 60 * 1000, limit: 5, standardHeaders: true, legacyHeaders: false });
+const transporter = nodemailer.createTransport({ service: 'gmail', auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS } });
+const cookieOptions = () => ({
   httpOnly: true,
-  secure: true,       // must be true on HTTPS
-  sameSite: 'None',   // must be None for cross-site
-  maxAge: 24*60*60*1000
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+  path: '/',
+  maxAge: 24 * 60 * 60 * 1000,
 });
-
+const hashResetCode = (code) => crypto.createHash('sha256').update(code).digest('hex');
+const validationFailed = (req, res) => {
+  const result = validationResult(req);
+  if (result.isEmpty()) return false;
+  res.status(400).json({ message: 'Invalid request', errors: result.array() });
+  return true;
 };
 
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER, // your email
-    pass: process.env.EMAIL_PASS, // app password or real password
-  },
-});
-
 async function sendResetEmail(to, code) {
-  await transporter.sendMail({
-    from: `"MyApp Support" <${process.env.EMAIL_USER}>`,
-    to,
-    subject: 'Your Password Reset Code',
-    text: `Your password reset code is: ${code}. It expires in 15 minutes.`,
-  });
-}
-async function sendWelcomeEmail(to, fullName) {
-  const subject = '🎉 Welcome to Our Platform!';
-  const text = `Hi ${fullName || 'there'},\n\nWelcome to our community! We're thrilled to have you here.\n\nYou can now log in and explore your account.\n\nBest regards,\nThe Support Team`;
-
-  const html = `
-    <div style="font-family: Arial, sans-serif; background:#f9f9f9; padding:20px; border-radius:10px;">
-      <h2 style="color:#007bff;">Welcome, ${fullName || 'Friend'} 🎉</h2>
-      <p>We’re thrilled to have you join our platform. You can now log in and start exploring!</p>
-      <p style="margin-top:20px;">With love, <br><b>The Support Team</b></p>
-    </div>
-  `;
-
-  await transporter.sendMail({
-    from: `"Support Team" <${process.env.EMAIL_USER}>`,
-    to,
-    subject,
-    text,
-    html,
-  });
+  return emailService.sendPasswordResetEmail(to, code);
 }
 
-
-// ------------------- REGISTER -------------------
-router.post('/register', async (req, res) => {
-  const { fullName, email, password, phone } = req.body;
-
+router.post('/register', registrationLimiter, [
+  body('fullName').trim().isLength({ min: 2, max: 100 }),
+  body('email').trim().isEmail().isLength({ max: 254 }),
+  body('password').isString().isLength({ min: 8, max: 128 }),
+  body('phone').optional({ values: 'falsy' }).isString().isLength({ max: 30 }),
+], async (req, res) => {
+  if (validationFailed(req, res)) return;
+  const fullName = req.body.fullName.trim();
+  const email = req.body.email.trim().toLowerCase();
   try {
-    const existing = await User.findOne({ email });
-    if (existing) return res.status(400).json({ message: 'User already exists' });
-
-    const hash = await bcrypt.hash(password, 10);
-    const user = new User({ fullName, email, password: hash, phone });
-    await user.save();
-    
-    sendWelcomeEmail(user.email, user.fullName).catch((err) =>
-      console.error('Email send error:', err)
-    );
-
-    res.status(201).json({ message: '✅ Registered successfully' });
-  } catch (err) {
-    console.error('Register error:', err);
-    res.status(500).json({ message: 'Server error during registration' });
+    const password = await bcrypt.hash(req.body.password, 12);
+    await User.create({ fullName, email, password, phone: req.body.phone || '' });
+    void transporter.sendMail({
+      from: `"Devpo Support" <${process.env.EMAIL_USER}>`, to: email,
+      subject: 'Welcome to Devpo', text: `Hi ${fullName}, welcome to Devpo.`,
+    }).catch((error) => console.error('Welcome email failed:', error.message));
+    return res.status(201).json({ message: 'Registered successfully' });
+  } catch (error) {
+    if (error.code === 11000) return res.status(409).json({ message: 'Email already registered' });
+    console.error('Registration failed:', error.message);
+    return res.status(500).json({ message: 'Registration failed' });
   }
 });
 
-// ------------------- LOGIN -------------------
-router.post('/login', async (req, res) => {
-  const { email, password } = req.body;
-
+router.post('/login', loginLimiter, [
+  body('email').trim().isEmail().isLength({ max: 254 }),
+  body('password').isString().isLength({ min: 1, max: 128 }),
+], async (req, res) => {
+  if (validationFailed(req, res)) return;
   try {
-    const user = await User.findOne({ email });
-    if (!user || !(await bcrypt.compare(password, user.password))) {
-      return res.status(400).json({ message: '❌ Invalid credentials' });
+    const email = req.body.email.trim().toLowerCase();
+    const user = await User.findOne({ email }).select('+password');
+    if (!user || !(await bcrypt.compare(req.body.password, user.password))) {
+      return res.status(401).json({ message: 'Invalid email or password' });
     }
-
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET || 'defaultsecret', {
-      expiresIn: '1d',
-    });
-
-    setTokenCookie(res, token);
-
-    res.json({ message: '✅ Login successful' });
-  } catch (err) {
-    console.error('Login error:', err);
-    res.status(500).json({ message: 'Server error during login' });
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1d', algorithm: 'HS256' });
+    res.cookie('token', token, cookieOptions());
+    return res.json({ message: 'Login successful' });
+  } catch (error) {
+    console.error('Login failed:', error.message);
+    return res.status(500).json({ message: 'Login failed' });
   }
 });
 
-// ------------------- LOGOUT -------------------
 router.post('/logout', (req, res) => {
-  res.clearCookie('token', {
-    httpOnly: true,
-    secure: true,
-    sameSite:'None'
-  });
-  res.json({ message: '✅ Logged out' });
+  const { maxAge, ...options } = cookieOptions();
+  res.clearCookie('token', options);
+  return res.json({ message: 'Logged out' });
 });
 
-// ------------------- FORGOT PASSWORD -------------------
-router.post('/forgot-password', async (req, res) => {
-  const { email } = req.body;
+router.post('/forgot-password', recoveryLimiter, [body('email').trim().isEmail().isLength({ max: 254 })], async (req, res) => {
+  if (validationFailed(req, res)) return;
+  const email = req.body.email.trim().toLowerCase();
   try {
-    const user = await User.findOne({ email: email.toLowerCase() });
-    if (!user) return res.status(404).json({ message: '❌ User not found' });
-
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
-    user.resetCode = code;
-    user.resetCodeExpiry = Date.now() + 15 * 60 * 1000; // 15 mins
-    await user.save();
-
-    await sendResetEmail(email, code); // ✅ send code via email
-
-    res.json({ message: '✅ Reset code sent to your email' });
-  } catch (err) {
-    console.error('Forgot password error:', err);
-    res.status(500).json({ message: 'Server error during code sending' });
+    const user = await User.findOne({ email });
+    if (user) {
+      const code = crypto.randomInt(100000, 1000000).toString();
+      user.resetCode = hashResetCode(code);
+      user.resetCodeExpiry = new Date(Date.now() + 15 * 60 * 1000);
+      await user.save();
+      try {
+        await sendResetEmail(email, code);
+      } catch (error) {
+        // Do not leave an unusable code active when delivery failed.
+        user.resetCode = undefined;
+        user.resetCodeExpiry = undefined;
+        try {
+          await user.save();
+        } catch (_cleanupError) {
+          console.error('Password recovery token cleanup failed');
+        }
+        console.error('Password recovery email delivery failed:', error?.name || 'EmailDeliveryError');
+        return res.status(503).json({ message: 'Unable to send password recovery email' });
+      }
+    }
+    return res.json({ message: 'If the account exists, a reset code has been sent.' });
+  } catch (error) {
+    console.error('Password recovery failed:', error.message);
+    return res.status(500).json({ message: 'Unable to process password recovery' });
   }
 });
 
-
-// ------------------- RESET PASSWORD -------------------
-router.post('/reset-password', async (req, res) => {
-  const { email, code, newPassword } = req.body;
-
+router.post('/reset-password', recoveryLimiter, [
+  body('email').trim().isEmail().isLength({ max: 254 }),
+  body('code').isString().matches(/^\d{6}$/),
+  body('newPassword').isString().isLength({ min: 8, max: 128 }),
+], async (req, res) => {
+  if (validationFailed(req, res)) return;
+  const email = req.body.email.trim().toLowerCase();
   try {
-    const user = await User.findOne({ email });
-    if (!user || user.resetCode !== code || !user.resetCodeExpiry || user.resetCodeExpiry < Date.now()) {
-      return res.status(400).json({ message: '❌ Invalid or expired code' });
+    const user = await User.findOne({ email }).select('+resetCode +resetCodeExpiry +password');
+    const submittedHash = hashResetCode(req.body.code);
+    const validHash = user?.resetCode && user.resetCode.length === submittedHash.length && crypto.timingSafeEqual(Buffer.from(user.resetCode), Buffer.from(submittedHash));
+    if (!user || !validHash || !user.resetCodeExpiry || user.resetCodeExpiry.getTime() < Date.now()) {
+      return res.status(400).json({ message: 'Invalid or expired reset code' });
     }
-
-    user.password = await bcrypt.hash(newPassword, 10);
+    user.password = await bcrypt.hash(req.body.newPassword, 12);
     user.resetCode = undefined;
     user.resetCodeExpiry = undefined;
     await user.save();
-
-    res.json({ message: '✅ Password reset successful' });
-  } catch (err) {
-    console.error('Reset password error:', err);
-    res.status(500).json({ message: 'Server error during password reset' });
+    return res.json({ message: 'Password reset successful' });
+  } catch (error) {
+    console.error('Password reset failed:', error.message);
+    return res.status(500).json({ message: 'Password reset failed' });
   }
 });
 
-// ------------------- GET CURRENT USER -------------------
 router.get('/me', protect, async (req, res) => {
-  try {
-    const user = await User.findById(req.user._id).select('-password');
-    if (!user) return res.status(404).json({ message: '❌ User not found' });
-    res.json(user);
-  } catch (err) {
-    console.error('Get user error:', err);
-    res.status(500).json({ message: 'Failed to fetch user' });
-  }
+  const user = await User.findById(req.user._id).select('-password -resetCode -resetCodeExpiry').lean();
+  if (!user) return res.status(404).json({ message: 'User not found' });
+  return res.json(user);
 });
 
 module.exports = router;
