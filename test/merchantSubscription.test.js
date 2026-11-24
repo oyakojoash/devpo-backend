@@ -108,6 +108,19 @@ test('late renewal activation begins a fresh period from confirmation time', asy
   assert.equal(sub.expiresAt.getTime(), late.getTime() + service.PERIOD_MS);
 });
 
+test('renewal uses the pending downgrade plan and amount', async () => {
+  const models = memoryModels();
+  await models.SubscriptionModel.create({ merchant: 'merchant-renewal', plan: service.snapshot('premium'), status: 'active',
+    startedAt: NOW, expiresAt: new Date(NOW.getTime() + service.PERIOD_MS), pendingDowngrade: service.snapshot('growth'), history: [] });
+
+  const result = await service.requestRenewal('merchant-renewal', { ...models, now: () => NOW });
+
+  assert.equal(result.plan.id, 'growth');
+  assert.equal(result.payment.plan, 'growth');
+  assert.equal(result.payment.amountKsh, 300);
+  assert.equal(result.payment.status, 'pending');
+});
+
 test('subscription API protects every endpoint and rejects client-supplied price or rate', async () => {
   const protect = (_req, _res, next) => next();
   const router = createMerchantSubscriptionRouter({ protect });
