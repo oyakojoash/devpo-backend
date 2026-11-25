@@ -39,6 +39,7 @@ const allowedOrigins = new Set([
   'https://dvepoadmin.netlify.app',
   'https://devpo-frontend.onrender.com',
   'https://devpo1-frontend.onrender.com',
+  'https://dvepo-vendor.vercel.app',
   'http://localhost:3000',
 ]);
 
